@@ -12,6 +12,6 @@ Clone the test branch, and try to compile and run on your pico. It is a simple B
     ├── source/             # Source folder (Put all your codes here)
         └── CMakeLists.txt  # Update this with whatever new .c file you added
         └── header.h        # Update this with your function prototypes before calling in main.c
-        └── blink.c         # Simple code to test that everything is working
+        └── blink.c         # Simple code to test that everything is working (No need to touch)
 
 
