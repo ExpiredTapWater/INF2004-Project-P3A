@@ -2,7 +2,7 @@
 **Robotic Car Project - Team P3A**
 
 ## Before Creating Your Own Branch
-Clone the test branch, and try to compile and run on your pico. It is a simple Blinky program using FreeRTOS.
+Clone the test branch, and try to compile and run on your pico. It is a simple Blinky program using FreeRTOS. If its working well, then you can build your code on top of it for easier merging later.
 
 ### Folder Structure
     Main Folder/
