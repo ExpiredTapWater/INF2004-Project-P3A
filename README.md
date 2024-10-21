@@ -14,6 +14,11 @@ Clone the test branch, and try to compile and run on your pico. It is a simple B
         └── header.h        # Update this with your function prototypes before calling in main.c
         └── blink.c         # Simple code to test that everything is working (No need to touch)
 
-### Help
+## Help Stuff
+
+### Where to add your functions to the header
+Add them here so you can call them from main.c
+
+![Header](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/header.jpg?token=GHSAT0AAAAAACX5E7LXTTF3QNLA2CKNEGXMZYV4JVQ "header.h")
 
 
