@@ -22,3 +22,12 @@ Add them here so you can call them from main.c
 ![Header](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/header.jpg?token=GHSAT0AAAAAACX5E7LXTTF3QNLA2CKNEGXMZYV4JVQ "header.h")
 
 
+### How to rename the file
+Change the variable in the red box. If you somehow need to reference it, use ${PROJECT_NAME}
+
+![Rename](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/rename.jpg?token=GHSAT0AAAAAACX5E7LXMEXJK476MPZJ6JWQZYV4MHQ "Rename")
+
+### Where to call your functions in main.c
+Add them here so you can call them from main.c
+
+![Rename](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/main.jpg?token=GHSAT0AAAAAACX5E7LXMZLMLALBAQN5XTW6ZYV4NOA "Main")
