@@ -1,6 +1,3 @@
-# INF2004-Project-P3A
-**Robotic Car Project - Team P3A**
-
 ## Multicore Branch
 The code here is meant to be run on the robotic car mounted Pico, and is optimised to make use of SMP provided by FreeRTOS.
 Tasks are split according to producer (core_0) and consumers (core_1) with the aim of minimising cross core communication.
