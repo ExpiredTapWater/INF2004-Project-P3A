@@ -27,7 +27,7 @@ Tasks are split according to producer (core_0) and consumers (core_1) with the a
 | **Name**            | **Remarks**                                                                                          |
 |---------------------|------------------------------------------------------------------------------------------------------------------------|
 | `received_queue`    | All received UDP messgages |
-| `commands_queue`    | Parsed messages that are motor commands. One way. Used by core_1 |
+| `commands_queue`    | One way communication to 'Motor' on core_1 from core_0. Holds motor commands. |
 
 ### Folder Structure
     Main Folder/
