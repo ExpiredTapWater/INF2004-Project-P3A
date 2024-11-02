@@ -18,7 +18,7 @@ Tasks are split according to producer (core_0) and consumers (core_1) with the a
 | `Motor`             | Equal        | Processes commands from core_0 and sets up the L298N module accordingly  |
 | `PID`               | Equal        | Updates output PWM according to PID algorithm (Will eventually merge with motor task)|
 | `LED`               | Equal        | Blinks the built in LED. Should always be blinking else another task is blocking    |
-| `Ultrasonic`        | Equal        | Uses binary semaphores to sync with interrupts for more accurate readings    |
+| `Ultrasonic`        | Equal        | Uses semaphores to sync with interrupts for non blocking readings    |
 
 ### Either (Interrupts)
 | **Task/Function**   | **Remarks**                                                                                          |
