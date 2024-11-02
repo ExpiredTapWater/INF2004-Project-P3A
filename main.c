@@ -6,12 +6,25 @@
 #include "pico/multicore.h"
 #include "hardware/gpio.h"
 #include "header.h"
-#include "semphr.h"
+
+void sample_ultrasonic_task(void *pvParameters);
 
 // Define the queue for task-to-task communication
 QueueHandle_t received_queue = NULL;
 QueueHandle_t commands_queue = NULL;
-SemaphoreHandle_t mutex;
+//SemaphoreHandle_t mutex;
+
+// Create task handles globally (for use in task manager)
+TaskHandle_t LED_T = NULL;
+TaskHandle_t GPIO_T = NULL;
+TaskHandle_t UDP_T = NULL;
+TaskHandle_t Message_T = NULL;
+TaskHandle_t Command_T = NULL;
+TaskHandle_t Heartbeat_T = NULL;
+TaskHandle_t Motor_T = NULL;
+TaskHandle_t TaskManager_T = NULL;
+TaskHandle_t TestHandle_1 = NULL;
+TaskHandle_t TestHandle_2 = NULL;
 
 // Determines to setup for Access Point or via Hotspot
 bool HOTSPOT = true;
@@ -37,59 +50,64 @@ int main(void)
     cyw43_arch_init();
     setup_gpio_motor();
     setup_pwm_motor();
-    setup_encoder();
+    setup_interrupts();
 
     /* Read state to see what connection mode was selected
     Default button is GP22 (Pulled High)*/
     HOTSPOT = get_connection_mode();
 
-    // Create mutex, queues and handles
-    mutex = xSemaphoreCreateMutex();
+    // Create queues
+    received_queue = xQueueCreate(10, sizeof(uint8_t));
+    commands_queue = xQueueCreate(4, sizeof(uint8_t));
 
-    received_queue = xQueueCreate(10, MESSAGE_BUFFER);
-    commands_queue = xQueueCreate(4, sizeof(int));
-
-    TaskHandle_t core_0_A, core_0_B, core_0_C,core_0_D,core_0_E;
-    TaskHandle_t core_1_A, core_1_B, core_1_C;
-    TaskHandle_t debug_core;
+    // --------------- TASK CREATION ---------------
 
     // Create blinky task
-    xTaskCreate(blink, "LEDTask", 512, NULL, 1, &core_0_A);
+    xTaskCreate(blink, "LEDTask", 512, NULL, 1, &LED_T);
 
     // Create SMP testing task
     int GPIO_PIN = 28;
-    xTaskCreate(GPIO_blink, "GPIOTask", 128, &GPIO_PIN, 1, &core_1_A);
+    xTaskCreate(GPIO_blink, "GPIOTask", 128, &GPIO_PIN, 1, &GPIO_T);
 
     // Run the corresponding connection method based on user's input
     if (HOTSPOT == 0){
-        xTaskCreate(start_UDP_server_hotspot, "UDPTask", 1024, NULL, 3, &core_0_B);
+        xTaskCreate(start_UDP_server_hotspot, "UDPTask", 1024, NULL, 3, &UDP_T);
     }else{
-        xTaskCreate(start_UDP_server_ap, "UDPTask", 1024, NULL, 3, &core_0_C);
+        xTaskCreate(start_UDP_server_ap, "UDPTask", 1024, NULL, 3, &UDP_T);
     }
 
     // Create queue consumer task
-    xTaskCreate(message_handler, "MessageTask", 1024, NULL, 2, &core_0_D);
+    xTaskCreate(message_handler, "MessageTask", 1024, NULL, 2, &Message_T);
 
     // Create heartbeat task
-    xTaskCreate(heartbeat_task, "HearbeatTask", 1024, NULL, 1, &core_0_E);
+    xTaskCreate(heartbeat_task, "HearbeatTask", 1024, NULL, 1, &Heartbeat_T);
 
     // Create motor movement task
-    xTaskCreate(motor_task, "MotorTask", 1024, NULL, 1, &core_1_B);
+    xTaskCreate(motor_task, "MotorTask", 1024, NULL, 1, &Motor_T);
 
     // Create motor command task
-    xTaskCreate(process_motor_commands, "CmdTask", 1024, NULL, 1, &core_1_C);
+    xTaskCreate(process_motor_commands, "CmdTask", 1024, NULL, 1, &Command_T);
 
-    //xTaskCreate(encoder_debug_task, "DebugTask", 256, NULL, 1, NULL);
+    //xTaskCreate(encoder_debug_task, "DebugTask", 256, NULL, 1, &TestHandle_1);
 
-    // Pin handles to cores
-    vTaskCoreAffinitySet(core_0_A, (1 << 0)); // Core 0
-    vTaskCoreAffinitySet(core_0_B, (1 << 0)); // Core 0
-    vTaskCoreAffinitySet(core_0_C, (1 << 0)); // Core 0
-    vTaskCoreAffinitySet(core_0_D, (1 << 0)); // Core 0
-    vTaskCoreAffinitySet(core_0_E, (1 << 0)); // Core 0
-    vTaskCoreAffinitySet(core_1_A, (1 << 1)); // Core 1
-    vTaskCoreAffinitySet(core_1_B, (1 << 1)); // Core 1
-    vTaskCoreAffinitySet(core_1_C, (1 << 1)); // Core 1
+    xTaskCreate(sample_ultrasonic_task, "UltTask", 256, NULL, 1, &TestHandle_2);
+
+    xTaskCreate(task_manager, "TMTask", 256, NULL, 1, &TaskManager_T);
+
+    // Pin handles to core 0
+    vTaskCoreAffinitySet(LED_T, (1 << 0));
+    vTaskCoreAffinitySet(UDP_T, (1 << 0));
+    vTaskCoreAffinitySet(Message_T, (1 << 0));
+    vTaskCoreAffinitySet(Heartbeat_T, (1 << 0));
+    vTaskCoreAffinitySet(TaskManager_T, (1 << 1)); // Core 1
+
+    // Pin handles to core 1
+    vTaskCoreAffinitySet(GPIO_T, (1 << 1));
+    vTaskCoreAffinitySet(Motor_T, (1 << 1));
+    vTaskCoreAffinitySet(Command_T, (1 << 1));
+
+    //vTaskCoreAffinitySet(TestHandle_1, (1 << 1)); // Core 1
+    vTaskCoreAffinitySet(TestHandle_2, (1 << 1)); // Core 1
 
     vTaskStartScheduler();
 

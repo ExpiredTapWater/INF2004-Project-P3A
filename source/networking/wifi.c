@@ -51,14 +51,12 @@ void udp_receive_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
         return;
     }
 
-    // Copy the received data into a buffer
-    char buffer[MESSAGE_BUFFER];  // Adjust size as needed
-    int len = p->tot_len > sizeof(buffer) - 1 ? sizeof(buffer) - 1 : p->tot_len;
-    pbuf_copy_partial(p, buffer, len, 0);
-    buffer[len] = '\0';  // Null-terminate the string
+    uint8_t buffer;
+    pbuf_copy_partial(p, &buffer, 1, 0);  // Copy a single byte. look at all them bytes saved lol
 
     // Print the received message
-    DEBUG_PRINT("Received UDP packet from %s:%d\n", ipaddr_ntoa(addr), port);
+    //DEBUG_PRINT("Received UDP packet from %s:%d\n", ipaddr_ntoa(addr), port);
+    DEBUG_PRINT("Received UDP packet from %s:%d, data (hex): 0x%02X\n", ipaddr_ntoa(addr), port, buffer);
     total_packets_received += 1;
     
     // Add to queue
@@ -98,6 +96,7 @@ void send_udp_packet(const char *data, const ip_addr_t *client_ip, uint16_t clie
     }
     pbuf_free(p);
 }
+
 
 // Main function to start the UDP server
 void start_UDP_server_ap(void *pvParameters) {

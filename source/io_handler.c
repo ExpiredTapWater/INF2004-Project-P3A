@@ -1,17 +1,17 @@
-// Pico
 #include <stdio.h>
 #include <stdbool.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
-// FreeRTOS
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include <queue.h>
-// Our Headers
 #include "header.h"
 
+// Flags
+bool BUZZER_INIT = false;
 bool HANDSHAKE = false; // Remote connected state
-//bool IN_MOTION = false; // Car moving state
 
 void heartbeat_task(void *pvParameters){
     while(1){
@@ -24,31 +24,32 @@ void heartbeat_task(void *pvParameters){
     }
 }
 
-void reply_handshake(char* message){
-    if (strcmp(message, "ESP-Hello") == 0){
+void reply_handshake(uint8_t message){
+    if (message == (uint8_t) 0xFF){
         send_udp_packet("Pico-Hello", &remote_ip, 2004);
         total_packets_received -= 1; // Remove handshake packet count
         HANDSHAKE = true;
+        buzzer(2);
     }
 }
 
-int parse_command(char* command){
+int parse_command(uint8_t command){
 
     // Stop command is sent
-    if (strcmp(command, "0000") == 0) { // Stop
+    if (command == 0) { // Stop
         return 0;
 
     } else{  // Check commands in priotiry of Front>Back>Left>Right
 
-        if (command[2] == '1'){
+        if (command == '1'){
             return 1; //Forward
-        } else if (command[2] == '2'){
+        } else if (command == '2'){
             return 5; //Forward-2
-        } else if (command[3] >= '1'){
+        } else if (command >= '3'){
             return 2; //Reverse
-        } else if (command[0] >= '1'){
+        } else if (command >= '4'){
             return 3; //Left
-        } else if (command[1] >= '1'){
+        } else if (command >= '5'){
             return 4; //Right
         }{
             return 9;
@@ -57,13 +58,12 @@ int parse_command(char* command){
 }
 
 void message_handler(void *pvParameters){
-    char message[MESSAGE_BUFFER] = {0};
-    char previous_command[10] = {0};
-    int motor_command = 0;
+    uint8_t message = 1;
+    uint8_t previous_command = 1;
 
     while(1){
         led_off();
-        xQueueReceive(received_queue, message, portMAX_DELAY);
+        xQueueReceive(received_queue, &message, portMAX_DELAY);
         led_on();
         //printf("main.c: %s total: %d\n", message, total_packets_received);
 
@@ -71,20 +71,28 @@ void message_handler(void *pvParameters){
         if (!HANDSHAKE){
             reply_handshake(message);
         
-        // Check for any other forms of commands like MANUAL/AUTO here before assuming its a motor cmd
-
+        // Remote has already been connected
         } else {
 
-            // If latest command received matches the previus command, ignore
-            if (strcmp(message, previous_command) != 0) {
-                strncpy(previous_command, message, 10);
+            // Check for special command messsages
+            if (message == 0xF1 || message == 0xF2) {
+                buzzer(1);
 
-                // Parse message to get motor command, then send to queue
-                motor_command = parse_command(message);
-                if (xQueueSend(commands_queue, &motor_command, 0U) != pdPASS) {
-                    printf("Command Queue is full!\n");
+                // Notify the mode_switcher_task of the mode change
+                xTaskNotify(TaskManager_T, message, eSetValueWithOverwrite);
+            }
+            
+            // Else the message should be a motor command, so send over to core_1
+            else if (previous_command != message){
+                
+                // If latest command received matches the previus command, ignore
+                previous_command = message;
+
+                // Directly send message to command_queue
+                if (xQueueSend(commands_queue, &message, 0U) != pdPASS) {
+                    printf("Command Queue is full!\n"); // You should never see this, hopefully
                 }
-
+                
             }
         }
     }
@@ -99,4 +107,62 @@ bool get_connection_mode(void){
 
     bool state = gpio_get(MODE_SELECT_BUTTON);
     return state;
+}
+
+// Auxilary Function
+void buzzer(int count){
+
+    if (!BUZZER_INIT){
+        
+        gpio_init(BUZZER_PIN);
+        gpio_set_dir(BUZZER_PIN, GPIO_OUT);
+
+        uint32_t divider = CLOCK_FREQUENCY / (FREQUENCY * 65536);
+
+        gpio_set_function(BUZZER_PIN, GPIO_FUNC_PWM);
+        uint slice = pwm_gpio_to_slice_num(BUZZER_PIN);
+        pwm_set_clkdiv(slice, divider);
+        pwm_set_wrap(slice, 65535);
+        pwm_set_enabled(slice, true);
+
+        BUZZER_INIT = true;
+
+    }
+
+    for (int i = 0; i < count; i++) {
+
+        pwm_set_gpio_level(BUZZER_PIN, 65535 / 2);
+        vTaskDelay(pdMS_TO_TICKS(200));
+        pwm_set_gpio_level(BUZZER_PIN, 0);
+        vTaskDelay(pdMS_TO_TICKS(200));
+
+    }
+}
+
+void task_manager(void *pvParameters) {
+
+    /* Mode Selection
+    [0] = Mannual
+    [1] = Auto (Line Following)
+    [2] = ???? */
+    uint32_t MODE = 0;
+
+    while (1) {
+
+        // Wait for a notification (more efficient than polling)
+        xTaskNotifyWait(0x00, ULONG_MAX, &MODE, portMAX_DELAY);
+
+        if (MODE == 0xF1) {
+            // Switch to Manual Mode
+            vTaskResume(LED_T);
+            vTaskSuspend(GPIO_T);
+            printf("LED on GPIO off\n");
+            
+        } else if (MODE == 0xF2) {
+            // Switch to Auto Mode
+            vTaskResume(GPIO_T);
+            vTaskSuspend(LED_T);
+            printf("LED off GPIO on\n");
+        }
+    }
 }

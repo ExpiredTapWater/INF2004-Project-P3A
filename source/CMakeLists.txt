@@ -4,7 +4,9 @@ add_executable(${PROJECT_NAME}
     blink.c
     io_handler.c
     networking/wifi.c
+    sensors/interrupt.c
     sensors/encoder.c
+    sensors/ultrasonic.c
     motor/motor.c
 )
 

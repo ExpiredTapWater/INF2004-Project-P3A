@@ -4,7 +4,7 @@
 #include "hardware/timer.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "header.h"
+#include "sensors.h"
 
 volatile uint32_t pulse_width_L = 0;
 volatile uint32_t pulse_width_R = 0;
@@ -45,8 +45,7 @@ void reset_encoder() {
     
 }
 
-
-void setup_encoder(){
+void setup_encoder_old(){
     // Initialize the wheel encoder pins
     gpio_init(LEFT_ENCODER);
     gpio_init(RIGHT_ENCODER);

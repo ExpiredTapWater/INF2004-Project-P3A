@@ -3,7 +3,6 @@
 // Networking Stuff
 #define WIFI_CHANNEL 11
 #define UDP_RECV_PORT 2004
-#define MESSAGE_BUFFER 16
 
 // ---- HOTSPOT ----
 #define HOTSPOT_SSID "CY"
@@ -34,7 +33,7 @@
 #define AP_TELE_IP_4 0
 
 // Enables debug print statements
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
 #else

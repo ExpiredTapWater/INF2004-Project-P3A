@@ -8,7 +8,8 @@
 #include "hardware/pwm.h"
 #include "motor.h"
 
-#if 1
+// Set 1 to print PID values
+#if 0
 #define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
 #else
 #define DEBUG_PRINT(fmt, args...) // Nothing happens if DEBUG is 0
