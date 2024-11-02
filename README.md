@@ -53,7 +53,7 @@ and functions as the companion device to the robotic car. It heavily utilises as
    1. Format accelerometer values into a binary-like string (8 bytes)
    2. Convert that string into an actual binary representation (1 byte)
    3. Send the single byte via UDP, then increment the counter
-   4. When button is released, send 3 stop commands
+   4. When button is released, spam 3 stop commands
 
 
 ### Folder Structure
