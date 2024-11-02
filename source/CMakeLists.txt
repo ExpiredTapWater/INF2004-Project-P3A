@@ -2,6 +2,10 @@
 add_executable(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/main.c
     blink.c
+    io_handler.c
+    networking/wifi.c
+    sensors/encoder.c
+    motor/motor.c
 )
 
 # Don't think there is a need to change anything here

@@ -4,41 +4,20 @@
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "hardware/gpio.h"
-#include "semphr.h"
 
-#define DELAY 1000
-
-extern SemaphoreHandle_t mutex;
-
-/* For debug: Ensures only one task from either cores can print at one time
-Try to ensure printf statements only appear on tasks pinned to core 0 */
-
-void vGuardedPrint(char *out){
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    puts(out);
-    xSemaphoreGive(mutex);
-}
-
-// Debug task to print the core the task calling it is running from
-void print_pinned_core(void){
-    char *task_name = pcTaskGetName(NULL);
-    char out[25];
-
-    sprintf(out, "%s on Core: %d", task_name, get_core_num());
-    vGuardedPrint(out);
-
-}
+#define BLINK_DELAY 1000
+volatile bool UDP_FLAG = false;
 
 // Simple Task to constantly blink the built in LED
 void blink(void *pvParameters)
 {   
-
-    while (true) {
-        cyw43_arch_gpio_put(0, 1);
-        vTaskDelay(pdMS_TO_TICKS(DELAY));
-        print_pinned_core();
-        cyw43_arch_gpio_put(0, 0);
-        vTaskDelay(pdMS_TO_TICKS(DELAY));
+    while(1){
+        while (!UDP_FLAG) {
+            cyw43_arch_gpio_put(0, 1);
+            vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY));
+            cyw43_arch_gpio_put(0, 0);
+            vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY));
+        }
     }
 }
 
@@ -51,9 +30,44 @@ void GPIO_blink(void *param) {
 
     while (true) {
         gpio_put(GPIO_PIN, 1);
-        vTaskDelay(pdMS_TO_TICKS(DELAY));
-        print_pinned_core();
+        vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY));
         gpio_put(GPIO_PIN, 0);
-        vTaskDelay(pdMS_TO_TICKS(DELAY));
+        vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY));
     }
+}
+
+void led_on()
+{   UDP_FLAG = true;
+    cyw43_arch_gpio_put(0, 1);
+}
+
+void led_off()
+{   
+    cyw43_arch_gpio_put(0, 0);
+    UDP_FLAG = false;
+}
+
+// Simple flashing program to denote which connection mode is active
+void flash(int count, bool mode) {
+
+    if (mode){ // Constant blinking
+        for (int i = 0; i < count; i++) {
+            cyw43_arch_gpio_put(0, 1);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            cyw43_arch_gpio_put(0, 0);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    } else{ // Flashes twice quickly
+        for (int i = 0; i < 3; i++) {
+            cyw43_arch_gpio_put(0, 1);
+            vTaskDelay(pdMS_TO_TICKS(70));
+            cyw43_arch_gpio_put(0, 0);
+            vTaskDelay(pdMS_TO_TICKS(70));
+            cyw43_arch_gpio_put(0, 1);
+            vTaskDelay(pdMS_TO_TICKS(70));
+            cyw43_arch_gpio_put(0, 0);
+            vTaskDelay(pdMS_TO_TICKS(300));
+        }
+    }
+
 }
