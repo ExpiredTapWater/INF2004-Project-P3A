@@ -27,6 +27,11 @@ Tasks are split according to producer (core_0) and consumers (core_1) with the a
 | `Encoder`           | Updates pulse duration based on interrupts. Not pinned to any core, but further processing is done in 'Motor' on core_1
 
 ### Queues
+| **Name**            | **Remarks**                                                                                          |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|
+| `received_queue`    | All received UDP messgages |
+| `commands_queue`    | Parsed messages that are motor commands. One way. Used by core_1 |
+
 ### Folder Structure
     Main Folder/
     ├── CMakeLists.txt          # Root CMakeLists.txt (No need to touch)
