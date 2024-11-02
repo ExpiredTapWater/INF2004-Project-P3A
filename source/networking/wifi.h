@@ -33,7 +33,7 @@
 #define AP_TELE_IP_4 0
 
 // Enables debug print statements
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
 #else

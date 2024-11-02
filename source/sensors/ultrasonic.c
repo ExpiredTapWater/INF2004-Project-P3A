@@ -40,7 +40,7 @@ float get_distance() {
 
     // Send trigger pulse
     gpio_put(TRIG_PIN, 1);
-    vTaskDelay(pdMS_TO_TICKS(10));  // Wait for 10 ms
+    vTaskDelay(pdMS_TO_TICKS(0.01));  // Wait for 10 ms
     gpio_put(TRIG_PIN, 0);
 
     // Wait for measurement to complete
@@ -71,6 +71,6 @@ void sample_ultrasonic_task(void *pvParameters){
         mydistance = get_distance();
         printf("Distance: %.4f\n", mydistance);
 
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

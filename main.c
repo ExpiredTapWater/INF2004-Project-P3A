@@ -83,7 +83,7 @@ int main(void)
     xTaskCreate(heartbeat_task, "HearbeatTask", 1024, NULL, 1, &Heartbeat_T);
 
     // Create motor movement task
-    xTaskCreate(motor_task, "MotorTask", 1024, NULL, 1, &Motor_T);
+    xTaskCreate(motor_task, "MotorTask", 1024, NULL, 3, &Motor_T);
 
     // Create motor command task
     xTaskCreate(process_motor_commands, "CmdTask", 1024, NULL, 1, &Command_T);
@@ -99,7 +99,7 @@ int main(void)
     vTaskCoreAffinitySet(UDP_T, (1 << 0));
     vTaskCoreAffinitySet(Message_T, (1 << 0));
     vTaskCoreAffinitySet(Heartbeat_T, (1 << 0));
-    vTaskCoreAffinitySet(TaskManager_T, (1 << 1)); // Core 1
+    vTaskCoreAffinitySet(TaskManager_T, (1 << 0));
 
     // Pin handles to core 1
     vTaskCoreAffinitySet(GPIO_T, (1 << 1));

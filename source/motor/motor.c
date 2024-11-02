@@ -7,6 +7,7 @@
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "motor.h"
+#include "commands.h"
 
 // Set 1 to print PID values
 #if 0
@@ -23,6 +24,17 @@ bool clockwise_motor1 = true;  // Motor 1 direction
 bool clockwise_motor2 = true;  // Motor 2 direction
 
 // PID parameters for Motor 1
+float Kp_motor1 = 1.05;
+float Ki_motor1 = 0.125;
+float Kd_motor1 = 0.05;
+
+// PID parameters for Motor 2
+float Kp_motor2 = 1;
+float Ki_motor2 = 0.1;
+float Kd_motor2 = 0.05;
+
+/*Previous Good with 50ms and 0.05f
+// PID parameters for Motor 1
 float Kp_motor1 = 2.15;
 float Ki_motor1 = 0.25;
 float Kd_motor1 = 0.1;
@@ -30,7 +42,7 @@ float Kd_motor1 = 0.1;
 // PID parameters for Motor 2
 float Kp_motor2 = 2;
 float Ki_motor2 = 0.2;
-float Kd_motor2 = 0.1;
+float Kd_motor2 = 0.1;*/
 
 bool APPLY_PID = false;
 
@@ -128,7 +140,7 @@ void update_motor(float speed_motor1, float speed_motor2, bool clockwise_motor1,
 }
 
 void motor_task(void *params) {
-    const float dt = 0.05f;  // Time interval in seconds (50 ms)
+    const float dt = 0.025f;  // Time interval in seconds (50 ms)
 
     while (1) {
         if (APPLY_PID) {
@@ -190,7 +202,7 @@ void motor_task(void *params) {
         }
 
         // 11. Delay to maintain consistent loop timing
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(25));
     }
 }
 
@@ -233,6 +245,7 @@ void process_motor_commands(void *params) {
     int motor_command = 0;
 
     while (1) {
+
         // Wait to receive a command from the queue, storing it in motor_command
         if (xQueueReceive(commands_queue, &motor_command, portMAX_DELAY) == pdPASS) {
             switch (motor_command) {
@@ -241,49 +254,122 @@ void process_motor_commands(void *params) {
                     target_speed_motor1 = 0;
                     target_speed_motor2 = 0;
                     APPLY_PID = false;
+                    reset_encoder();
                     reset_PID();
                     break;
 
-                case 1: // Forward
+// --------------------- FORWARD  --------------------- 
+
+                case CMD_FORWARD_SLOW: // w/PID
                     reset_encoder();
                     clockwise_motor1 = true;
                     clockwise_motor2 = true;                     
-                    target_speed_motor1 = 90;
-                    target_speed_motor2 = 90;
+                    target_speed_motor1 = 95;
+                    target_speed_motor2 = 95;
                     APPLY_PID = true;
                     break;
-                
-                case 5: // Max Speed Forward
+
+                case CMD_FORWARD_FAST:
                     clockwise_motor1 = true;
                     clockwise_motor2 = true;                     
-                    target_speed_motor1 = 95;
-                    target_speed_motor2 = 97;
-                    APPLY_PID = false;
-                    break;
-
-                case 2: // Reverse
-                    clockwise_motor1 = false; 
-                    clockwise_motor2 = false; 
                     target_speed_motor1 = 100;
                     target_speed_motor2 = 100;
                     APPLY_PID = false;
                     break;
-                case 3:
+
+// --------------------- REVERSE  ---------------------                     
+
+                case CMD_REVERSE_SLOW: // w/PID
+                    reset_encoder();
+                    clockwise_motor1 = false; 
+                    clockwise_motor2 = false; 
+                    target_speed_motor1 = 90;
+                    target_speed_motor2 = 90;
+                    APPLY_PID = true;
+                    break;
+
+                case CMD_REVERSE_FAST:
+                    clockwise_motor1 = false;
+                    clockwise_motor2 = false;
+                    target_speed_motor1 = 100;
+                    target_speed_motor2 = 100;
+                    APPLY_PID = false;
+                    break;
+
+// --------------------- LEFT  --------------------- 
+
+                case CMD_LEFT_SLOW:
                     clockwise_motor1 = false;
                     clockwise_motor2 = true;
                     target_speed_motor1 = 0;
-                    target_speed_motor2 = 80;
+                    target_speed_motor2 = 70;
                     APPLY_PID = false;
                     reset_PID();
                     break;
-                case 4:
+
+                case CMD_LEFT_FAST:
+                    clockwise_motor1 = false;
+                    clockwise_motor2 = true;
+                    target_speed_motor1 = 60;
+                    target_speed_motor2 = 70;
+                    APPLY_PID = false;
+                    reset_PID();
+                    break;
+
+// --------------------- RIGHT  --------------------- 
+
+                case CMD_RIGHT_SLOW:
                     clockwise_motor1 = true;
                     clockwise_motor2 = false;
-                    target_speed_motor1 = 80;
+                    target_speed_motor1 = 70;
                     target_speed_motor2 = 0;
                     APPLY_PID = false;
                     reset_PID();
                     break;
+
+                case CMD_RIGHT_FAST:
+                    clockwise_motor1 = true;
+                    clockwise_motor2 = false;
+                    target_speed_motor1 = 70;
+                    target_speed_motor2 = 60; // WRONG
+                    APPLY_PID = false;
+                    reset_PID();
+                    break;
+
+// --------------------- DIAGONAL  --------------------- 
+
+                case CMD_DIAG_TOP_LEFT:
+                    clockwise_motor1 = true;
+                    clockwise_motor2 = true;
+                    target_speed_motor1 = 60;
+                    target_speed_motor2 = 90;
+                    APPLY_PID = false;
+                    break;
+
+                case CMD_DIAG_TOP_RIGHT:
+                    clockwise_motor1 = true;
+                    clockwise_motor2 = true;
+                    target_speed_motor1 = 90+3;
+                    target_speed_motor2 = 60;
+                    APPLY_PID = false;
+                    break;
+
+                case CMD_DIAG_BOTTOM_LEFT:
+                    clockwise_motor1 = false;
+                    clockwise_motor2 = false;
+                    target_speed_motor1 = 60;
+                    target_speed_motor2 = 90;
+                    APPLY_PID = false;
+                    break;
+
+                case CMD_DIAG_BOTTOM_RIGHT:
+                    clockwise_motor1 = false;
+                    clockwise_motor2 = false;
+                    target_speed_motor1 = 90;
+                    target_speed_motor2 = 60;
+                    APPLY_PID = false;
+                    break;
+
                 default:
                     target_speed_motor1 = 0;
                     target_speed_motor2 = 0;
