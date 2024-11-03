@@ -7,6 +7,7 @@ add_executable(${PROJECT_NAME}
     sensors/interrupt.c
     sensors/encoder.c
     sensors/ultrasonic.c
+    sensors/infrared.c
     motor/motor.c
 )
 

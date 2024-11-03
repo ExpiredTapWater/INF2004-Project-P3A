@@ -37,14 +37,14 @@ void GPIO_blink(void *param) {
 }
 
 void led_on()
-{   UDP_FLAG = true;
+{   //UDP_FLAG = true;
     cyw43_arch_gpio_put(0, 1);
 }
 
 void led_off()
 {   
     cyw43_arch_gpio_put(0, 0);
-    UDP_FLAG = false;
+    //UDP_FLAG = false;
 }
 
 // Simple flashing program to denote which connection mode is active

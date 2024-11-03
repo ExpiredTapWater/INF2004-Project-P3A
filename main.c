@@ -67,7 +67,7 @@ int main(void)
 
     // Create SMP testing task
     int GPIO_PIN = 28;
-    xTaskCreate(GPIO_blink, "GPIOTask", 128, &GPIO_PIN, 1, &GPIO_T);
+    xTaskCreate(GPIO_blink, "GPIOTask", 512, &GPIO_PIN, 1, &GPIO_T);
 
     // Run the corresponding connection method based on user's input
     if (HOTSPOT == 0){
@@ -92,22 +92,24 @@ int main(void)
 
     xTaskCreate(sample_ultrasonic_task, "UltTask", 256, NULL, 1, &TestHandle_2);
 
+    xTaskCreate(sample_ir_task, "IRTask", 256, NULL, 1, &TestHandle_1);
+
     xTaskCreate(task_manager, "TMTask", 256, NULL, 1, &TaskManager_T);
 
     // Pin handles to core 0
-    vTaskCoreAffinitySet(LED_T, (1 << 0));
-    vTaskCoreAffinitySet(UDP_T, (1 << 0));
-    vTaskCoreAffinitySet(Message_T, (1 << 0));
-    vTaskCoreAffinitySet(Heartbeat_T, (1 << 0));
-    vTaskCoreAffinitySet(TaskManager_T, (1 << 0));
+    //vTaskCoreAffinitySet(LED_T, (1 << 0));
+    //vTaskCoreAffinitySet(UDP_T, (1 << 0));
+    //vTaskCoreAffinitySet(Message_T, (1 << 0));
+    //vTaskCoreAffinitySet(Heartbeat_T, (1 << 0));
+    //vTaskCoreAffinitySet(TaskManager_T, (1 << 0));
 
     // Pin handles to core 1
-    vTaskCoreAffinitySet(GPIO_T, (1 << 1));
-    vTaskCoreAffinitySet(Motor_T, (1 << 1));
-    vTaskCoreAffinitySet(Command_T, (1 << 1));
+    //vTaskCoreAffinitySet(GPIO_T, (1 << 1));
+    //vTaskCoreAffinitySet(Motor_T, (1 << 1));
+    //vTaskCoreAffinitySet(Command_T, (1 << 1));
 
     //vTaskCoreAffinitySet(TestHandle_1, (1 << 1)); // Core 1
-    vTaskCoreAffinitySet(TestHandle_2, (1 << 1)); // Core 1
+    //vTaskCoreAffinitySet(TestHandle_2, (1 << 1)); // Core 1
 
     vTaskStartScheduler();
 

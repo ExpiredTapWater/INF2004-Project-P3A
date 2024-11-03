@@ -55,6 +55,10 @@ const int pulses_per_revolution = 20;   // Adjust based on your encoder's PPR
 const float max_speed_motor1 = 0.5;
 const float max_speed_motor2 = 0.5;
 
+// Precompute repeated values
+const float motor_factor = max_speed_motor1 * 0.01f;
+const float pulse_to_seconds = 1 / 1e6;
+
 // Integral and previous error terms for Motor 1
 float integral_motor1 = 0;
 float previous_error_motor1 = 0;
@@ -84,7 +88,7 @@ float compute_actual_speed(uint32_t pulse_width) {
     }
 
     // Convert pulse width from microseconds to seconds
-    float pulse_interval_seconds = pulse_width / 1e6;
+    float pulse_interval_seconds = pulse_width * pulse_to_seconds;
 
     // Calculate the time for one full revolution
     float time_per_revolution = pulse_interval_seconds * pulses_per_revolution;
@@ -96,7 +100,7 @@ float compute_actual_speed(uint32_t pulse_width) {
 }
 
 float percent_to_speed(int percent) {
-    return (percent / 100.0f) * max_speed_motor1;
+    return percent * motor_factor;
 }
 
 // Update motor direction and speed (Motor 1 and Motor 2 independently)
@@ -108,7 +112,7 @@ void update_motor(float speed_motor1, float speed_motor2, bool clockwise_motor1,
     if (speed_motor1 < 0) speed_motor1 = 0;
 
     // Set PWM speed for Motor 1
-    uint16_t pwm_value_motor1 = (uint16_t)((speed_motor1 / 100.0) * 65535);
+    uint16_t pwm_value_motor1 = (uint16_t)((speed_motor1 * 0.01) * 65535);
     pwm_set_gpio_level(MOTOR1_PWM_PIN, pwm_value_motor1);
 
     // Set direction for Motor 1
@@ -126,7 +130,7 @@ void update_motor(float speed_motor1, float speed_motor2, bool clockwise_motor1,
     if (speed_motor2 < 0) speed_motor2 = 0;
 
     // Set PWM speed for Motor 2
-    uint16_t pwm_value_motor2 = (uint16_t)((speed_motor2 / 100.0) * 65535);
+    uint16_t pwm_value_motor2 = (uint16_t)((speed_motor2 * 0.01) * 65535);
     pwm_set_gpio_level(MOTOR2_PWM_PIN, pwm_value_motor2);
 
     // Set direction for Motor 2
@@ -141,6 +145,7 @@ void update_motor(float speed_motor1, float speed_motor2, bool clockwise_motor1,
 
 void motor_task(void *params) {
     const float dt = 0.025f;  // Time interval in seconds (50 ms)
+    const float reciprocal_dt = 40.0f;
 
     while (1) {
         if (APPLY_PID) {
@@ -165,8 +170,8 @@ void motor_task(void *params) {
             integral_motor2 = fmaxf(fminf(integral_motor2, integral_max), integral_min);
 
             // 5. Compute derivatives (units: m/s²)
-            float derivative_motor1 = (error_motor1 - previous_error_motor1) / dt;
-            float derivative_motor2 = (error_motor2 - previous_error_motor2) / dt;
+            float derivative_motor1 = (error_motor1 - previous_error_motor1) * reciprocal_dt;
+            float derivative_motor2 = (error_motor2 - previous_error_motor2) * reciprocal_dt;
 
             // 6. Compute control outputs (units: m/s)
             float control_output_motor1 = Kp_motor1 * error_motor1
@@ -273,7 +278,7 @@ void process_motor_commands(void *params) {
                     clockwise_motor1 = true;
                     clockwise_motor2 = true;                     
                     target_speed_motor1 = 100;
-                    target_speed_motor2 = 100;
+                    target_speed_motor2 = 98;
                     APPLY_PID = false;
                     break;
 
@@ -283,8 +288,8 @@ void process_motor_commands(void *params) {
                     reset_encoder();
                     clockwise_motor1 = false; 
                     clockwise_motor2 = false; 
-                    target_speed_motor1 = 90;
-                    target_speed_motor2 = 90;
+                    target_speed_motor1 = 95;
+                    target_speed_motor2 = 95;
                     APPLY_PID = true;
                     break;
 
@@ -292,7 +297,7 @@ void process_motor_commands(void *params) {
                     clockwise_motor1 = false;
                     clockwise_motor2 = false;
                     target_speed_motor1 = 100;
-                    target_speed_motor2 = 100;
+                    target_speed_motor2 = 98;
                     APPLY_PID = false;
                     break;
 
@@ -331,7 +336,7 @@ void process_motor_commands(void *params) {
                     clockwise_motor1 = true;
                     clockwise_motor2 = false;
                     target_speed_motor1 = 70;
-                    target_speed_motor2 = 60; // WRONG
+                    target_speed_motor2 = 70;
                     APPLY_PID = false;
                     reset_PID();
                     break;

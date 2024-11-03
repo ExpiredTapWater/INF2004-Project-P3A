@@ -46,6 +46,9 @@ void task_manager(void *pvParameters);
 // interrupt.c
 void setup_interrupts();
 
+// infrared.c
+void sample_ir_task();
+
 // motor.c
 void setup_gpio_motor();
 void setup_pwm_motor(); 

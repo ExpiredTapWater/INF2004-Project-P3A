@@ -4,13 +4,28 @@
 #include "sensors.h"
 
 void interrupt_dispatcher(uint gpio, uint32_t events) {
-
-    if (gpio == LEFT_ENCODER || gpio == RIGHT_ENCODER) {
-        encoder_callback(gpio, events);
-    } else{
-        ultrasonic_callback(gpio, events);
+    
+    // Organised in ascending pins, most likely to least likely
+    switch (gpio) {
+        case LEFT_ENCODER:
+            encoder_callback_L(gpio, events);
+            break;
+        case RIGHT_ENCODER:
+            encoder_callback_R(gpio, events);
+            break;
+        case RIGHT_IR_SENSOR:
+            ir_callback_R(gpio, events);
+            break;
+        case LEFT_IR_SENSOR:
+            ir_callback_L(gpio, events);
+            break;
+        case BARCODE_IR_SENSOR:
+            ir_callback_BAR(gpio, events);
+            break;
+        default:
+            ultrasonic_callback(gpio, events);
+            break;
     }
-
 }
 
 void setup_interrupts(){
@@ -35,5 +50,17 @@ void setup_interrupts(){
     
     // Remember that echo needs to catch both rising and falling
     gpio_set_irq_enabled(ECHO_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+
+    // Infrared Sensor Stuff
+    gpio_init(LEFT_IR_SENSOR);
+    gpio_init(RIGHT_IR_SENSOR);
+    gpio_init(BARCODE_IR_SENSOR);
+    gpio_set_dir(LEFT_IR_SENSOR, GPIO_IN);
+    gpio_set_dir(RIGHT_IR_SENSOR, GPIO_IN);
+    gpio_set_dir(BARCODE_IR_SENSOR, GPIO_IN);
+
+    gpio_set_irq_enabled(LEFT_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(RIGHT_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(BARCODE_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
 
 }
