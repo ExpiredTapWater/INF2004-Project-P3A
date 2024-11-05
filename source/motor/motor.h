@@ -1,4 +1,5 @@
 #include "queue.h"
+#include "semphr.h"
 
 // GPIO Pin Definitions
 #define MOTOR1_PWM_PIN 15     // PWM pin for Motor 1 speed control (GP2)
@@ -27,5 +28,15 @@ extern volatile uint32_t pulse_width_L;
 extern volatile uint32_t pulse_width_R;
 void reset_encoder();
 
+// From ultrasonic.c
+extern SemaphoreHandle_t UltrasonicWarn_BinarySemaphore;
+
 // From main.c
 extern QueueHandle_t commands_queue;
+
+// Set 1 to print PID values
+#if 0
+#define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
+#else
+#define DEBUG_PRINT(fmt, args...) // Nothing happens if DEBUG is 0
+#endif

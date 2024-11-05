@@ -7,8 +7,6 @@
 #include "hardware/gpio.h"
 #include "header.h"
 
-void sample_ultrasonic_task(void *pvParameters);
-
 // Define the queue for task-to-task communication
 QueueHandle_t received_queue = NULL;
 QueueHandle_t commands_queue = NULL;
@@ -23,6 +21,9 @@ TaskHandle_t Command_T = NULL;
 TaskHandle_t Heartbeat_T = NULL;
 TaskHandle_t Motor_T = NULL;
 TaskHandle_t TaskManager_T = NULL;
+TaskHandle_t LineFollowing_T = NULL;
+TaskHandle_t BarcodesPulse_T = NULL;
+TaskHandle_t Ultrasonic_T = NULL;
 TaskHandle_t TestHandle_1 = NULL;
 TaskHandle_t TestHandle_2 = NULL;
 
@@ -58,7 +59,11 @@ int main(void)
 
     // Create queues
     received_queue = xQueueCreate(10, sizeof(uint8_t));
-    commands_queue = xQueueCreate(4, sizeof(uint8_t));
+    commands_queue = xQueueCreate(10, sizeof(uint8_t));
+
+    // Creates semaphores
+    create_semaphores();
+    create_semaphores_barcode();
 
     // --------------- TASK CREATION ---------------
 
@@ -88,13 +93,18 @@ int main(void)
     // Create motor command task
     xTaskCreate(process_motor_commands, "CmdTask", 1024, NULL, 1, &Command_T);
 
+    // Create line following task
+    xTaskCreate(line_following_task, "LineTask", 1024, NULL, 1, &LineFollowing_T);
+
     //xTaskCreate(encoder_debug_task, "DebugTask", 256, NULL, 1, &TestHandle_1);
 
-    xTaskCreate(sample_ultrasonic_task, "UltTask", 256, NULL, 1, &TestHandle_2);
+    xTaskCreate(ultrasonic_task, "UltTask", 1024, NULL, 1, &Ultrasonic_T);
 
-    xTaskCreate(sample_ir_task, "IRTask", 256, NULL, 1, &TestHandle_1);
+    //xTaskCreate(sample_ir_task, "IRTask", 256, NULL, 1, &TestHandle_1);
 
     xTaskCreate(task_manager, "TMTask", 256, NULL, 1, &TaskManager_T);
+
+    xTaskCreate(barcode_width_processor, "BarWidthTask", 1024, NULL, 1, &BarcodesPulse_T);
 
     // Pin handles to core 0
     //vTaskCoreAffinitySet(LED_T, (1 << 0));

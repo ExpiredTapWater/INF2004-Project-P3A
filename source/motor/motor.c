@@ -6,22 +6,21 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
+#include "semphr.h"
 #include "motor.h"
 #include "commands.h"
 
-// Set 1 to print PID values
-#if 0
-#define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
-#else
-#define DEBUG_PRINT(fmt, args...) // Nothing happens if DEBUG is 0
-#endif
-
-// Motor speed target
+// Used globally to set speed for motor_task()
 float target_speed_motor1 = 0;  // Target speed percentage (0-100)
 float target_speed_motor2 = 0;  // Target speed percentage (0-100)
-
 bool clockwise_motor1 = true;  // Motor 1 direction
 bool clockwise_motor2 = true;  // Motor 2 direction
+
+// Ultrasonic Flags
+bool DistanceWarning = false;
+bool ReverseOverride = false;
+
+// --------------------  PID Stuff Start --------------------  
 
 // PID parameters for Motor 1
 float Kp_motor1 = 1.05;
@@ -33,25 +32,11 @@ float Kp_motor2 = 1;
 float Ki_motor2 = 0.1;
 float Kd_motor2 = 0.05;
 
-/*Previous Good with 50ms and 0.05f
-// PID parameters for Motor 1
-float Kp_motor1 = 2.15;
-float Ki_motor1 = 0.25;
-float Kd_motor1 = 0.1;
-
-// PID parameters for Motor 2
-float Kp_motor2 = 2;
-float Ki_motor2 = 0.2;
-float Kd_motor2 = 0.1;*/
-
 bool APPLY_PID = false;
 
-// Best: 1.2,0.5,0.2
-
 // Constants
-const float wheel_circumference = 0.3318; // in meters (example: 21 cm circumference)
-const int pulses_per_revolution = 20;   // Adjust based on your encoder's PPR
-
+const float wheel_circumference = 0.3318;
+const uint8_t pulses_per_revolution = 20;
 const float max_speed_motor1 = 0.5;
 const float max_speed_motor2 = 0.5;
 
@@ -70,6 +55,8 @@ float previous_error_motor2 = 0;
 // Maximum and minimum integral windup limits
 float integral_max = 100;
 float integral_min = -100;
+
+// --------------------  PID Stuff end --------------------  
 
 void reset_PID() {
 
@@ -101,6 +88,19 @@ float compute_actual_speed(uint32_t pulse_width) {
 
 float percent_to_speed(int percent) {
     return percent * motor_factor;
+}
+
+// Update motor direction and speed (Motor 1 and Motor 2 independently)
+void update_motor_fast(uint16_t speed_motor1, uint16_t speed_motor2) {
+
+    // Set PWM speed for Motor 1
+    uint16_t pwm_value_motor1 = (speed_motor1 * 655);
+    pwm_set_gpio_level(MOTOR1_PWM_PIN, pwm_value_motor1);
+
+    // Set PWM speed for Motor 2
+    uint16_t pwm_value_motor2 = (speed_motor2 * 655);
+    pwm_set_gpio_level(MOTOR2_PWM_PIN, pwm_value_motor2);
+
 }
 
 // Update motor direction and speed (Motor 1 and Motor 2 independently)
@@ -148,7 +148,14 @@ void motor_task(void *params) {
     const float reciprocal_dt = 40.0f;
 
     while (1) {
-        if (APPLY_PID) {
+
+        // Check if ultrasonic gave any warnings. Reset speed to zero if so.
+        if (xSemaphoreTake(UltrasonicWarn_BinarySemaphore, 0) == pdTRUE) {
+            DistanceWarning = true;
+            printf("Distance Warning\n");
+        } 
+
+        if (APPLY_PID && !DistanceWarning) {
 
             // 1. Compute actual speeds (m/s)
             float actual_speed_motor1 = compute_actual_speed(pulse_width_L);
@@ -201,8 +208,16 @@ void motor_task(void *params) {
             DEBUG_PRINT("[M1] %.2f-%.2f-%.2f [M2] %.2f-%.2f-%.2f\n",
                 target_speed_motor1_ms, actual_speed_motor1, control_output_percentage_motor1,
                 target_speed_motor2_ms, actual_speed_motor2, control_output_percentage_motor2);
+
         } else {
-            // Stop the motors
+
+            // Only allow reverse commands to bypass distance warning
+            if (DistanceWarning && !ReverseOverride) {
+                target_speed_motor1 = 0;
+                target_speed_motor2 = 0;
+            }
+
+            // PID not requested, set speeds manually
             update_motor(target_speed_motor1, target_speed_motor2, clockwise_motor1, clockwise_motor2);
         }
 
@@ -253,9 +268,13 @@ void process_motor_commands(void *params) {
 
         // Wait to receive a command from the queue, storing it in motor_command
         if (xQueueReceive(commands_queue, &motor_command, portMAX_DELAY) == pdPASS) {
+
+            // Set override false for everything first
+            ReverseOverride = false;
+
             switch (motor_command) {
 
-                case 0: // Stop
+                case 0x00: // Stop
                     target_speed_motor1 = 0;
                     target_speed_motor2 = 0;
                     APPLY_PID = false;
@@ -291,6 +310,7 @@ void process_motor_commands(void *params) {
                     target_speed_motor1 = 95;
                     target_speed_motor2 = 95;
                     APPLY_PID = true;
+                    ReverseOverride = true;
                     break;
 
                 case CMD_REVERSE_FAST:
@@ -299,6 +319,7 @@ void process_motor_commands(void *params) {
                     target_speed_motor1 = 100;
                     target_speed_motor2 = 98;
                     APPLY_PID = false;
+                    ReverseOverride = true;
                     break;
 
 // --------------------- LEFT  --------------------- 
@@ -376,6 +397,7 @@ void process_motor_commands(void *params) {
                     break;
 
                 default:
+                    reset_encoder();
                     target_speed_motor1 = 0;
                     target_speed_motor2 = 0;
                     APPLY_PID = false;
@@ -396,4 +418,10 @@ void encoder_debug_task(void *params){
     vTaskDelay(pdMS_TO_TICKS(200));
     }
     
+}
+
+// Only the ultrasonic sensor is allowed to disable the warning
+void disable_warning(){
+    DistanceWarning = false;
+    printf("Obstacle Cleared\n");
 }

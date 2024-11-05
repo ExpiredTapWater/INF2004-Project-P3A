@@ -1,8 +1,10 @@
 # Add your souce files here: 
 add_executable(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/main.c
-    blink.c
-    io_handler.c
+    io/blink.c
+    io/io_handler.c
+    io/line_following.c
+    io/barcodes.c
     networking/wifi.c
     sensors/interrupt.c
     sensors/encoder.c

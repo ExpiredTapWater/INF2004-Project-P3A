@@ -13,6 +13,8 @@ extern TaskHandle_t Command_T;
 extern TaskHandle_t Heartbeat_T;
 extern TaskHandle_t Motor_T;
 extern TaskHandle_t TaskManager_T;
+extern TaskHandle_t LineFollowing_T;
+extern TaskHandle_t Ultrasonic_T;
 extern TaskHandle_t TestHandle_1;
 extern TaskHandle_t TestHandle_2;
 
@@ -37,17 +39,27 @@ void send_udp_packet(const char *data, const ip_addr_t *client_ip, uint16_t clie
 #define FREQUENCY 1000.0f
 #define MESSAGE_BUFFER 16
 #define MODE_SELECT_BUTTON 22
+#define REMOTE_MODE 0xF1
+#define AUTOMATIC_MODE 0xF2
 bool get_connection_mode(void);
 void message_handler(void *pvParameters);
 void heartbeat_task(void *pvParameters);
 void buzzer(int count);
 void task_manager(void *pvParameters);
+void line_following_task(void *pvParameters);
 
 // interrupt.c
 void setup_interrupts();
+void enable_encoder_interrupts(void);
+void disable_encoder_interrupts(void);
 
 // infrared.c
 void sample_ir_task();
+void create_semaphores_barcode();
+
+// From encoder.c
+extern volatile uint32_t pulse_width_L;
+extern volatile uint32_t pulse_width_R;
 
 // motor.c
 void setup_gpio_motor();
@@ -55,3 +67,10 @@ void setup_pwm_motor();
 void motor_task(void *params);
 void process_motor_commands(void *params);
 void encoder_debug_task(void *params);
+
+// ultrasonic.c
+void ultrasonic_task(void *pvParameters);
+void create_semaphores();
+
+// From barcodes.c
+void barcode_width_processor();

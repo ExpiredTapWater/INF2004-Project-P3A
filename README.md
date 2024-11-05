@@ -45,7 +45,6 @@ Tasks are split according to producer (core_0) and consumers (core_1) with the a
         └── motor               # Motor related code
             └── motor.c         # PID and motor control code
             └── motor.h         # Headers used by motor.c
-            └── commands.c      # Binary mappings to motor commands
         └── networking          # Code to support network functions
             └── wifi.c          # Contains code to setup the UDP server
             └── wifi.h          # Headers used by wifi.c
