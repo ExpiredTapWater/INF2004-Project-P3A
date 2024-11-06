@@ -11,9 +11,9 @@ mpu = None
 X_NEUTRAL = 0.0   # X is the left(+) right(-) cant
 Y_NEUTRAL = 0.0 # Y is the forward-back cant 
 Z_NEUTRAL = 0.8 # Z is the rotation (facing sky or ground)
-NEUTRAL_DEADZONE = 0.15 # Deadzone where values are counted as neutral
+NEUTRAL_DEADZONE = 0.20 # Deadzone where values are counted as neutral
 
-HIGH_THRESHOLD = 0.55
+HIGH_THRESHOLD = 0.60
 
 def init_sensor(sda_pin=32, scl_pin=21):
     

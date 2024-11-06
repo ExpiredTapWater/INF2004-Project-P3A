@@ -41,13 +41,15 @@ Boot_Btn = None
 Calibrated = False
 HOTSPOT_MODE = False
 PULSE = False
+BARCODE_READ = ''
+BARCODE_COUNT = 0
 
 # --- Button Stuff ---
 DEBOUNCE = False
 DEBOUNCE_DELAY = 250
 
 # --- Mode Selection ----
-MODES = ['manual', 'auto']
+MODES = ['manual', 'auto', 'sta1']
 TOTAL_MODES = len(MODES)
 CURRENT_MODE = 0
 
@@ -200,6 +202,9 @@ def running_mode_interrupt(pin):
         elif MODES[CURRENT_MODE] == 'auto':
             command = '11110010'
             
+        elif MODES[CURRENT_MODE] == 'sta1':
+            command = '11110100'
+            
         # Add more possible modes and commands here
         
         if HOTSPOT_MODE:
@@ -208,6 +213,7 @@ def running_mode_interrupt(pin):
             IP = ACCESS_POINT_PICO_IP
         
         # Send command
+        command_byte = 0
         command_byte = int(command, 2).to_bytes(1, 'big')
         wifi.send_udp_message(command_byte, IP)
         PACKETS_SENT += 1
@@ -232,10 +238,15 @@ async def receive_task(queue):
     
 # Task to process receive UDP packets from queue
 async def process_messages(queue):
-    global PACKETS_RECV, PULSE
+    global PACKETS_RECV, PULSE, BARCODE_READ, BARCODE_COUNT
     while True:
-        message = await queue.get()         
-        PACKETS_RECV = int(message)
+        message = await queue.get()
+    
+        if message[0] == '-':
+            BARCODE_READ = message[1:] #Remove the hyphen
+            BARCODE_COUNT += 1
+        else:
+            PACKETS_RECV = int(message)
         PULSE = not PULSE
         
         # Add your processing logic here
@@ -275,7 +286,7 @@ async def main_task():
         F, B, L, R, FB_MAG, LR_MAG = await accel.get_direction()
         
         # Update UI with live data
-        display.main_ui(F, B, L, R, FB_MAG, LR_MAG, PACKETS_SENT, PACKETS_RECV, PULSE, CURRENT_MODE)
+        display.main_ui(F, B, L, R, FB_MAG, LR_MAG, PACKETS_SENT, PACKETS_RECV, PULSE, CURRENT_MODE, BARCODE_READ, BARCODE_COUNT)
         
         # If the send button has been pushed
         if(not Button.value()):

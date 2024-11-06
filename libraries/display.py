@@ -5,6 +5,8 @@ from machine import Pin, SoftI2C, Timer
 # Global Variables
 oled = None
 grahics = None
+MESSAGES_LIST = ['-', '-', '-']
+INTERNAL_COUNTER = 0
 
 def init_oled(sda_pin=22, scl_pin=23, width=128, height=64):
     
@@ -62,7 +64,9 @@ def calibrate():
     oled.text("To Set Centre",12,38)
     oled.show()
     
-def main_ui(F, B, L ,R , FB_MAG, LR_MAG, PACKETS_SENT, PACKETS_RECV, PULSE, CURRENT_MODE):
+def main_ui(F, B, L ,R , FB_MAG, LR_MAG, PACKETS_SENT, PACKETS_RECV, PULSE, CURRENT_MODE, BARCODE_READ, BARCODE_COUNT):
+    
+    global INTERNAL_COUNTER
     
     # Get blank canvas
     oled.fill(0)
@@ -99,7 +103,33 @@ def main_ui(F, B, L ,R , FB_MAG, LR_MAG, PACKETS_SENT, PACKETS_RECV, PULSE, CURR
         
         graphics.line(0,0,63,63,1) # \
         graphics.line(0,63,63,0,1) # /
+        
+    elif CURRENT_MODE == 2:
+        MODE_TEXT = 'STA1'
+        
+        graphics.line(0,0,63,63,1) # \
+        graphics.line(0,63,63,0,1) # /
     
+    # Process Barcode Text:
+        
+    # If there are no new messages, print back whatever is in memory
+    if INTERNAL_COUNTER != BARCODE_COUNT:
+        
+        INTERNAL_COUNTER += 1
+        
+        #Format Messgae
+        string = str(BARCODE_COUNT) + " " + BARCODE_READ
+        
+        #Shift everything down 1 slot
+        MESSAGES_LIST[2] = MESSAGES_LIST[1]
+        MESSAGES_LIST[1] = MESSAGES_LIST[0]
+        MESSAGES_LIST[0] = string
+    
+    # Show messages list    
+    oled.text(f"{MESSAGES_LIST[0]}", 68, 36)
+    oled.text(f"{MESSAGES_LIST[1]}", 68, 46)
+    oled.text(f"{MESSAGES_LIST[2]}", 68, 56)
+        
     # Packet Info
     oled.text(f"S:{PACKETS_SENT}", 68, 2)
     oled.text(f"R:{PACKETS_RECV}", 68, 12)
