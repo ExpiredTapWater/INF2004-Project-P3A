@@ -14,6 +14,9 @@ bool BUZZER_INIT = false;
 bool HANDSHAKE = false; // Remote connected state
 uint8_t CURRENT_MODE = 1;
 
+// Temp for week 10
+void swap_interrupts_for_station1(bool state);
+
 void heartbeat_task(void *pvParameters){
     while(1){
         if(HANDSHAKE){
@@ -52,7 +55,7 @@ void message_handler(void *pvParameters){
         } else {
 
             // Check for special command messsages
-            if (message == 0xF1 || message == 0xF2) {
+            if (message == 0xF1 || message == 0xF2 || message == 0xF4) {
                 buzzer(1);
 
                 // Notify the mode_switcher_task of the mode change
@@ -127,90 +130,180 @@ void task_manager(void *pvParameters) {
     /* Mode Selection
     [1] = Mannual
     [2] = Auto (Line Following)
-    [3] = ???? */
+    [3] = Station 1 */
 
     uint32_t REQUESTED_MODE = 0; // Can't use uint8 here
+    uint8_t FINAL_MODE = 0;      // Cast it later. Guarenteed to be 8 bits.
 
+    // Main Task Loop
     while (1) {
 
-        // Wait for a notification (more efficient than polling)
-        xTaskNotifyWait(0x00, ULONG_MAX, &REQUESTED_MODE, portMAX_DELAY);
+        /* Task Selection Loop. Since the button increments by one, user has to click twice to go from 1 > 3. Or maybe they misclicked.
+        With this loop they get a 1 second grace peroid to confirm their selection*/
+        while (1) {
 
-        switch (REQUESTED_MODE) {
+            // Wait for a notification indefinitely and retrieve it into REQUESTED_MODE
+            if (xTaskNotifyWait(0x00, ULONG_MAX, &REQUESTED_MODE, portMAX_DELAY) == pdPASS) {
+                printf("Task Change to: %d requested\n", REQUESTED_MODE);
+                FINAL_MODE = (uint8_t)REQUESTED_MODE;
+            }
 
-            // Cast to uint8, upper bits not needed. Not sure if faster
-            case (uint8_t)REMOTE_MODE:
+            while(1){
+
+                // Delay for a specified time before checking for new notifications again
+                vTaskDelay(pdMS_TO_TICKS(1000));
+
+                // Try to take another message. 
+                if (xTaskNotifyWait(0x00, ULONG_MAX, &REQUESTED_MODE, 0) == pdPASS) {
+
+                    // Able to take a message, means the user has requested a change before the timeout
+                    FINAL_MODE = (uint8_t)REQUESTED_MODE;
+                    printf("New mode %d requested before selection timeout\n", FINAL_MODE);
+
+                } else{
+
+                    // Nothing to take, user did not request a new mode. Break loop and continue with task switching
+                    //printf("Nothing new, continuing with %d\n", FINAL_MODE);
+                    break;
+                }
+
+            }
+
+            break;
+
+        }
+
+        switch (FINAL_MODE) {
+
+            case REMOTE_MODE:
 
                 // Purge all pending commands
                 xQueueReset(received_queue);
                 xQueueReset(commands_queue);
 
-                vTaskDelay(pdMS_TO_TICKS(100)); // Small delay to ensure queue has been flushed
+                DEBUG_PRINT("Reset Queues\n");
 
-                // Disable line following function
-                // Signal to line following function to stop
-                xTaskNotifyGive(LineFollowing_T);
+                // Stop all motor movements
+                reset_motor();
 
-                // Resume motor command processing
-                vTaskResume(Command_T);
-                vTaskResume(Motor_T);
-
-                vTaskDelay(pdMS_TO_TICKS(100)); // Small delay
-
-                // Enable wheel encoders
-                enable_encoder_interrupts();
+                // Disable line following function, even if it was in progress
+                xTaskNotify(LineFollowing_T, false, eSetValueWithOverwrite);
 
                 vTaskDelay(pdMS_TO_TICKS(50)); // Small delay
+
+                // Manage Interrupts
+                swap_interrupts_for_station1(false);
+                enable_encoder_interrupts();
+                enable_IR_interrupts();
+
+                DEBUG_PRINT("Interrupts Enabled\n");
+
+                vTaskDelay(pdMS_TO_TICKS(50)); // Small delay
+
+                // Purge again pending commands (in case user keeps spamming)
+                xQueueReset(received_queue);
+                xQueueReset(commands_queue);
+
+                // Task Management
+                vTaskResume(Command_T);
+                vTaskResume(Motor_T);
+                vTaskResume(BarcodesPulse_T);
+
+                DEBUG_PRINT("Motor Tasks Resumed\n");
+
+                // Reset to default 4Hz poll
+                set_ultrasonic_polldelay(250);
 
                 // Update currently selected mode
                 CURRENT_MODE = 1;
                 printf("Remote Operation Enabled\n");
 
-                // Purge all pending commands
-                xQueueReset(received_queue);
-                xQueueReset(commands_queue);
-
-                // Add in a final motor stop command
-                xQueueSend(commands_queue, 0x00, 0U);
-
                 break;
 
-            case (uint8_t)AUTOMATIC_MODE:
+            case AUTOMATIC_MODE:
 
                 // Purge all pending commands
                 xQueueReset(received_queue);
                 xQueueReset(commands_queue);
 
-                // Add in a final motor stop command
-                xQueueSend(commands_queue, 0x00, 0U);
+                DEBUG_PRINT("Reset Queues\n");
 
-                // Check that all movements has stopped
-                while(pulse_width_L != 0 || pulse_width_R != 0){
-                    vTaskDelay(pdMS_TO_TICKS(200)); // Give the motor time to complete the task
-                }
+                // Stop all motor movements
+                reset_motor();
 
-                // Suspend motor command processing
+                // Task Management
                 vTaskSuspend(Command_T);
                 vTaskSuspend(Motor_T);
+                vTaskResume(BarcodesPulse_T);
+
+                DEBUG_PRINT("Tasks Set\n");
 
                 // Disable wheel encoders
+                swap_interrupts_for_station1(false);
                 disable_encoder_interrupts();
+                enable_IR_interrupts();
 
-                vTaskDelay(pdMS_TO_TICKS(50)); // Small delay
+                DEBUG_PRINT("Interrupts Set\n");
 
-                // Signal to line following function to proceed
-                xTaskNotifyGive(LineFollowing_T);
-                printf("Line Following Enabled\n");
+                vTaskDelay(pdMS_TO_TICKS(20)); // Small delay
+
+                // Reset queue again in case the driver spams while the car is still moving
+                xQueueReset(received_queue);
+                xQueueReset(commands_queue);
+
+                // Reset to default 4Hz poll
+                set_ultrasonic_polldelay(250);
 
                 // Update current selected mode
                 CURRENT_MODE = 2;
 
-                // Reset queue again in case the driver keeps switches modes while the car is still moving
-                vTaskDelay(pdMS_TO_TICKS(100));
+                // Explicitly signal to line following function to proceed with true command.
+                xTaskNotify(LineFollowing_T, true, eSetValueWithOverwrite);
+                printf("Line Following Enabled\n");
+
+                break;
+
+            case STATION_1:
+
+                // Purge all pending commands
                 xQueueReset(received_queue);
                 xQueueReset(commands_queue);
 
-                break;
+                DEBUG_PRINT("Reset Queues\n");
+
+                // Stop all motor movements
+                reset_motor();
+
+                // Task Management
+                vTaskSuspend(Command_T);
+                vTaskSuspend(BarcodesPulse_T);
+                vTaskResume(Motor_T);
+
+                DEBUG_PRINT("Tasks Set\n");
+
+                // Manage Interrupts
+                disable_IR_interrupts();
+                enable_encoder_interrupts();
+                swap_interrupts_for_station1(true);
+
+                DEBUG_PRINT("Interrupts Set\n");
+
+                vTaskDelay(pdMS_TO_TICKS(20)); // Small delay
+
+                // Reset queue again in case the driver spams while the car is still moving
+                xQueueReset(received_queue);
+                xQueueReset(commands_queue);
+
+                // Temporary set a very high delay. Station1.c will call get_distance itself.
+                set_ultrasonic_polldelay(UINT16_MAX);
+
+                // Update current selected mode
+                CURRENT_MODE = 3;
+
+                // Notify task to begin
+                xTaskNotifyGive(Station1_T);
+
+                printf("Station 1 Program Start\n");
 
             default:
                 break;

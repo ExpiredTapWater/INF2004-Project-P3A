@@ -68,42 +68,52 @@ void line_following_task(void *pvParameters){
     uint8_t right_momentum = 40;
     const uint8_t INCREMENT = 1;
     const uint8_t DECREMENT = 1;
+    uint32_t start_command = false; // Needs to be int32 for task notifcation
 
     while(1){
 
-    update_motor(0, 0, true, true);
-
-    // Wait until task manager tells it to start
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-    // Crawl forward till black line is reached
-    forward();
-    while(black_detected != 1){
-
-            // Exit checking
-            if (ulTaskNotifyTake(pdTRUE, 0) == 1) {
-                update_motor_fast(0, 0);
-                break;
+        // Not sure if needed but won't hurt
+        update_motor(0, 0, true, true);
+        
+        // Wait until task manager explicitly tells it to start. The same notification is used to kick the task out to idle.
+        while (1) {
+            if (xTaskNotifyWait(0x00, ULONG_MAX, &start_command, portMAX_DELAY) == pdPASS) {
+                if (start_command) {
+                    break;
+                }
+                // Notified but did not ask task to start, continue to wait.
             }
+        }
 
-        vTaskDelay(pdMS_TO_TICKS(4));
+        // Crawl forward till black line is reached
+        forward();
+        while(black_detected != 1){
 
-    }
+                // Exit checking
+                if (xTaskNotifyWait(0x00, ULONG_MAX, &start_command, 0) == pdPASS) {
+                    update_motor_fast(0, 0);
+                    break;
+                }
+
+            vTaskDelay(pdMS_TO_TICKS(4));
+
+        }
 
         // Enter main loop
         while(1){
 
             // Check if ultrasonic gave any warnings. Reset speed to zero if so.
             if (xSemaphoreTake(UltrasonicWarn_BinarySemaphore, 0) == pdTRUE) {
+                update_motor_fast(0, 0);
                 printf("Distance Warning, ending line following\n");
                 break;
             } 
     
             // When detected black, turn left
             if(black_detected == 1){
-                 update_motor_fast(left_momentum, 70);
-                 left_momentum += INCREMENT;
-                 right_momentum -= DECREMENT;
+                update_motor_fast(left_momentum, 70);
+                left_momentum += INCREMENT;
+                right_momentum -= DECREMENT;
 
             } else{ // when detected white, turn right
                 update_motor_fast(70, right_momentum);
@@ -112,10 +122,12 @@ void line_following_task(void *pvParameters){
             }
             
             // Exit checking
-            if (ulTaskNotifyTake(pdTRUE, 0) == 1) {
+            if (xTaskNotifyWait(0x00, ULONG_MAX, &start_command, 0) == pdPASS) {
                 update_motor_fast(0, 0);
                 break;
             }
+
+            vTaskDelay(pdMS_TO_TICKS(1));
 
         }
     }

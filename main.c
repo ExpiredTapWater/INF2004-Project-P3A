@@ -10,6 +10,8 @@
 // Define the queue for task-to-task communication
 QueueHandle_t received_queue = NULL;
 QueueHandle_t commands_queue = NULL;
+QueueHandle_t barcodes_queue = NULL;
+QueueHandle_t encoder_queue = NULL; //Only for week 10
 //SemaphoreHandle_t mutex;
 
 // Create task handles globally (for use in task manager)
@@ -24,6 +26,7 @@ TaskHandle_t TaskManager_T = NULL;
 TaskHandle_t LineFollowing_T = NULL;
 TaskHandle_t BarcodesPulse_T = NULL;
 TaskHandle_t Ultrasonic_T = NULL;
+TaskHandle_t Station1_T = NULL;
 TaskHandle_t TestHandle_1 = NULL;
 TaskHandle_t TestHandle_2 = NULL;
 
@@ -60,10 +63,11 @@ int main(void)
     // Create queues
     received_queue = xQueueCreate(10, sizeof(uint8_t));
     commands_queue = xQueueCreate(10, sizeof(uint8_t));
+    barcodes_queue = xQueueCreate(40, sizeof(uint32_t));
+    encoder_queue  = xQueueCreate(10, sizeof(uint16_t));
 
     // Creates semaphores
     create_semaphores();
-    create_semaphores_barcode();
 
     // --------------- TASK CREATION ---------------
 
@@ -104,7 +108,9 @@ int main(void)
 
     xTaskCreate(task_manager, "TMTask", 256, NULL, 1, &TaskManager_T);
 
-    xTaskCreate(barcode_width_processor, "BarWidthTask", 1024, NULL, 1, &BarcodesPulse_T);
+    xTaskCreate(barcode_width_processor, "BarWidthTask", 2048, NULL, 3, &BarcodesPulse_T);
+
+    xTaskCreate(station_1_task, "Sta_1_Task", 1024, NULL, 1, &Station1_T);
 
     // Pin handles to core 0
     //vTaskCoreAffinitySet(LED_T, (1 << 0));

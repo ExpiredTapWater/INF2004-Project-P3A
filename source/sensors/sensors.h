@@ -1,8 +1,10 @@
 // encoder.c
 #define LEFT_ENCODER 0
 #define RIGHT_ENCODER 1
+#define MINIMUM_DEBOUCE 40000
 void encoder_callback_L(uint gpio, uint32_t events);
 void encoder_callback_R(uint gpio, uint32_t events);
+void encoder_callback_R_Station1(uint gpio, uint32_t events);
 
 // ultrasonic.c
 #define TRIG_PIN 4
@@ -11,17 +13,19 @@ void encoder_callback_R(uint gpio, uint32_t events);
 #define CALIBRATION_OFFSET 0
 #define CALIBRATION_SCALING 1
 #define TIMEOUT 100
-#define POLLING_DELAY 250
 void ultrasonic_callback(uint gpio, uint32_t events);
 
 // infrared.c
 #define IR_SENSOR 17
 #define BARCODE_IR_SENSOR 16
 void ir_callback(uint gpio, uint32_t events);
-void ir_callback_BAR(uint gpio, uint32_t events);
+void ir_callback_barcode(uint gpio, uint32_t events);
 
 // motor.c
 void disable_warning();
+
+// barcode.c
+#define MIN_DEBOUNCE 100    // Minimum value to count as a valid interrupt. Might have to be tuned for indiviudal sensors
 
 // Set 1 to print
 #if 1

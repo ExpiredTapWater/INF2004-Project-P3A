@@ -6,57 +6,177 @@
 #include "task.h"
 #include "barcodes.h"
 #include "queue.h"
+#include "timers.h"
 
-/*Stores processed width as 0 and 1 for narrow and wide respectively*/
-uint16_t barcode_lists = 0;
-bool ready_to_decode = false;
+uint32_t valid_pulses_array[ARRAY_SIZE] = {0};
+uint32_t temp_sort_array[ARRAY_SIZE] = {0};
+uint8_t array_index = 0;
 
-void print_binary(uint16_t value) {
-    for (int i = 15; i >= 0; i--) {
-        printf("%d", (value >> i) & 1);
+TimerHandle_t xBarcodeResetTimer;
+
+char decode_binary(uint16_t binary_code){
+
+    uint8_t index = 255; // Preset to an invalid number
+
+    // Search through the array
+    for (int i = 0; i < 43; i++) {
+        if (binary_code == barcodes[i]) {
+            index = i;
+        }
     }
-    printf("\n");
+
+    // If index is not 255, character was found. return it
+    if (index != 255){
+        return barcode_chars[index];
+    } else{
+        return '&'; // If not found, return a value not found in code39
+    }
 }
 
-void barcode_width_processor() {
-    float pulse = 0;
-    int count = 0;
-    int total_count = 0;
+// TESTING FUNCTION
+void print_bits(uint16_t value) {
+    // Loop over each bit from the most significant to the least significant
+    for (int i = 8; i >= 0; i--) {
+        // Print the bit at the current position
+        printf("%d", (value >> i) & 1);
+    }
+    printf("\n"); // Newline for better readability
+}
 
-    vTaskDelay(pdMS_TO_TICKS(2500));
-    printf("Barcode Width Task Started\n");
+// Function to process an array of pulse widths to short or long bars in binary
+uint16_t process_pulses(uint32_t pulses[], int size) {
 
-    while(1) {
+    uint32_t min_pulse = UINT32_MAX; // Start off with the max value! Not 0 lol.
 
-        // Print the current binary representation after each pulse processing
-        
-        print_binary(barcode_lists);
+    for (uint8_t j = 1; j < size; j++) { // Ignore first value, as it is usually an outlier
+        if (pulses[j] < CALCULATION_IGNORE_THRESHOLD) {
+            continue;  // Ignore pulses below threshold for calculating threshold
+        }
+        if (pulses[j] < min_pulse) {
+            min_pulse = pulses[j];
+        }
+    }
 
-        if (xSemaphoreTake(Barcode_BinarySemaphore, portMAX_DELAY));
+    // Calculate the dynamic threshold using 2nd lowest
+    float threshold = min_pulse * MULTIPLIER;
+    printf("\nDynamic Threshold: %.2f\n", threshold);
 
-        total_count += 1;
+    uint16_t barcode_binary = 0; // Holds the binary representation of the barcode
 
-        pulse = IR_pulse_width_BAR;
-        
-        if (pulse <= 10){
-            
-        } else{
+    // Classify each pulse as short or long
+    for (int j = 10; j < size - 10; j++) { // Start from the 2nd pulse and end one before the last
+    
+    // Seems wrong. But is correct to shift left before we write anything. If we shifted after writing
+    // We would get a hanging 0 at the back.
+    barcode_binary <<= 1; 
 
-            count += 1;
-            printf("Pulse: %f Good: %d Total: %d\n", pulse, count, total_count);
-
-            // Shift existing bits to the left by 1 to make space for the new bit
-            barcode_lists <<= 1;
-
-            // Classify the pulse as narrow or wide and set the new bit accordingly
-            if (pulse <= THRESHOLD) {
-                
-                // Narrow pulse: set the rightmost bit to 0 (no action needed since it's already 0)
-
+        if (pulses[j] > threshold) {
+                barcode_binary |= 1;
+                printf("1");
             } else {
-                // Wide pulse: set the rightmost bit to 1
-                barcode_lists |= 1;
+                printf("0");
             }
+    }
+
+    printf("\n");
+    print_bits(barcode_binary);
+    printf("011010000\n");
+    return barcode_binary;
+}
+
+// Reset array and queues for repeated testing. 
+void reset(){
+
+    for (uint8_t i = 0; i < ARRAY_SIZE; i++) {
+        valid_pulses_array[i] = 0;
+    }
+
+    xQueueReset(barcodes_queue);
+    printf("Array and Queue reset\n");
+}
+
+void vTimerCallback(TimerHandle_t xTimer){
+
+    if (array_index > 0 && array_index < ARRAY_SIZE) {
+        printf("Barcode Timer Over\n");
+        reset();
+        array_index = 0;
+    }
+}
+
+// Sample task
+void barcode_width_processor(void *pvParameters) {
+
+    vTaskDelay(pdMS_TO_TICKS(3000));
+    printf("Barcode Task Ready\n");
+
+    uint32_t timestamp = 0;
+    uint16_t processed_barcode = 0;
+    char character = '@';
+
+    // Create the timer (1-second timeout for example, adjust as needed)
+    xBarcodeResetTimer = xTimerCreate("BarcodeResetTimer", pdMS_TO_TICKS(7000), pdFALSE, 0, vTimerCallback);
+
+    while (1){
+
+        // Wait for the first timestamp from ISR
+        if (xQueueReceive(barcodes_queue, &timestamp, portMAX_DELAY) == pdTRUE) {
+
+            // Start or reset the timer on the first pulse
+            if (array_index == 0) {
+                xTimerStart(xBarcodeResetTimer, 0);
+            } else {
+                xTimerReset(xBarcodeResetTimer, 0); // Reset timer on every pulse
+            }
+
+
+            // Ensures environmental values don't get past
+            if (timestamp <= WIDTH_IGNORE){
+                printf("Valid Pulse: %u\n", timestamp);
+                valid_pulses_array[array_index] = timestamp;
+                array_index++;
+            }
+
+
+            // When array size is full, start process
+            if(array_index == ARRAY_SIZE){
+
+                // Stop the timer since array is full
+                xTimerStop(xBarcodeResetTimer, 0);
+
+                // Reset index for next run
+                array_index = 0;
+
+                // Process barcode into binary
+                processed_barcode = process_pulses(valid_pulses_array, ARRAY_SIZE);
+
+                // Check if it matches known barcodes
+                character = decode_binary(processed_barcode);
+
+                if (character != '&'){
+
+                    // Send character message to remote
+                    char packet[3];
+                    sprintf(packet, "-%c", character);
+                    send_udp_packet(packet, &remote_ip, 2004);
+                    printf("Matched with %c\n", character);
+
+                } else{
+
+                    // Send failure message to remote
+                    send_udp_packet("-Fail", &remote_ip, 2004);
+                    printf("Failed\n");
+                    
+                }
+
+
+
+                vTaskDelay(pdMS_TO_TICKS(2000));
+
+                reset();
+                
+            }
+            
 
         }
     }

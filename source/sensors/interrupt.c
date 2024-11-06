@@ -3,6 +3,8 @@
 #include "hardware/gpio.h"
 #include "sensors.h"
 
+bool station1_flag = false;
+
 void interrupt_dispatcher(uint gpio, uint32_t events) {
     
     // Organised in ascending pins, most likely to least likely
@@ -11,10 +13,14 @@ void interrupt_dispatcher(uint gpio, uint32_t events) {
             encoder_callback_L(gpio, events);
             break;
         case RIGHT_ENCODER:
-            encoder_callback_R(gpio, events);
+            if (station1_flag){
+                encoder_callback_R_Station1(gpio, events);
+            }else{
+                encoder_callback_R(gpio, events);
+            }
             break;
         case BARCODE_IR_SENSOR:
-            ir_callback_BAR(gpio, events);
+            ir_callback_barcode(gpio, events);
             break;
         case IR_SENSOR:
             ir_callback(gpio, events);
@@ -51,25 +57,36 @@ void setup_interrupts(){
     // ---------- Infrared Sensor Stuff ---------- 
     gpio_init(IR_SENSOR);
     gpio_init(BARCODE_IR_SENSOR);
+    gpio_set_pulls(BARCODE_IR_SENSOR, false, true); // Pull down
     gpio_set_dir(IR_SENSOR, GPIO_IN);
     gpio_set_dir(BARCODE_IR_SENSOR, GPIO_IN);
 
-    // Set up interrupts to trigger only on both edge
+    // Set up interrupts to trigger on both edge
     gpio_set_irq_enabled(BARCODE_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
     gpio_set_irq_enabled(IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
 
 }
 
 void enable_encoder_interrupts(void){
-
     gpio_set_irq_enabled(LEFT_ENCODER, GPIO_IRQ_EDGE_RISE, true);
     gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, true);
-
 }
 
 void disable_encoder_interrupts(void){
-
     gpio_set_irq_enabled(LEFT_ENCODER, GPIO_IRQ_EDGE_RISE, false);
     gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, false);
+}
 
+void enable_IR_interrupts(void){
+    gpio_set_irq_enabled(BARCODE_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, false);
+    gpio_set_irq_enabled(IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, false);
+}
+
+void disable_IR_interrupts(void){
+    gpio_set_irq_enabled(BARCODE_IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(IR_SENSOR, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+}
+
+void swap_interrupts_for_station1(bool state){
+    station1_flag = state;
 }

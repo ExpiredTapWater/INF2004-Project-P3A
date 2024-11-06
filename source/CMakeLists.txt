@@ -5,6 +5,7 @@ add_executable(${PROJECT_NAME}
     io/io_handler.c
     io/line_following.c
     io/barcodes.c
+    io/station1.c
     networking/wifi.c
     sensors/interrupt.c
     sensors/encoder.c

@@ -8,6 +8,7 @@
 
 volatile uint32_t pulse_start = 0;
 volatile uint32_t pulse_end = 0;
+uint16_t POLLING_DELAY = 250;
 SemaphoreHandle_t Ultrasonic_BinarySemaphore;
 SemaphoreHandle_t UltrasonicWarn_BinarySemaphore; //extern'd
 
@@ -48,7 +49,7 @@ float get_distance() {
     if (xSemaphoreTake(Ultrasonic_BinarySemaphore, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
         // Measurement complete
         uint32_t pulse_duration = pulse_end - pulse_start;
-        float distance = (pulse_duration / 58.0f);  // Conversion factor to get cm
+        float distance = (pulse_duration * 0.01724f);  // Conversion factor to get cm
 
         // Transform with predefined calibration values
         distance = (distance*CALIBRATION_SCALING) + CALIBRATION_OFFSET;
@@ -95,11 +96,11 @@ void ultrasonic_task(void *pvParameters){
     printf("Starting Ultrasonic Task\n");
 
     while(1){
-        
+            
         distance = get_distance();
         if(distance <= MIN_DISTANCE){
 
-            printf("Distance: %.4f\n", distance);
+            printf("Distance: %.4f\n",distance);
 
             if (!warning_already_raised){
                 warning_already_raised = true;
@@ -114,5 +115,11 @@ void ultrasonic_task(void *pvParameters){
             }
         }
         vTaskDelay(pdMS_TO_TICKS(POLLING_DELAY));
+
     }
+
+}
+
+void set_ultrasonic_polldelay(uint16_t delay){
+    POLLING_DELAY = delay;
 }

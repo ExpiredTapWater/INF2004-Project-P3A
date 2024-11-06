@@ -15,6 +15,8 @@ extern TaskHandle_t Motor_T;
 extern TaskHandle_t TaskManager_T;
 extern TaskHandle_t LineFollowing_T;
 extern TaskHandle_t Ultrasonic_T;
+extern TaskHandle_t BarcodesPulse_T;
+extern TaskHandle_t Station1_T;
 extern TaskHandle_t TestHandle_1;
 extern TaskHandle_t TestHandle_2;
 
@@ -41,6 +43,7 @@ void send_udp_packet(const char *data, const ip_addr_t *client_ip, uint16_t clie
 #define MODE_SELECT_BUTTON 22
 #define REMOTE_MODE 0xF1
 #define AUTOMATIC_MODE 0xF2
+#define STATION_1 0xF4
 bool get_connection_mode(void);
 void message_handler(void *pvParameters);
 void heartbeat_task(void *pvParameters);
@@ -52,10 +55,11 @@ void line_following_task(void *pvParameters);
 void setup_interrupts();
 void enable_encoder_interrupts(void);
 void disable_encoder_interrupts(void);
+void enable_IR_interrupts(void);
+void disable_IR_interrupts(void);
 
 // infrared.c
 void sample_ir_task();
-void create_semaphores_barcode();
 
 // From encoder.c
 extern volatile uint32_t pulse_width_L;
@@ -67,10 +71,22 @@ void setup_pwm_motor();
 void motor_task(void *params);
 void process_motor_commands(void *params);
 void encoder_debug_task(void *params);
+void reset_motor();
 
 // ultrasonic.c
 void ultrasonic_task(void *pvParameters);
+void set_ultrasonic_polldelay(uint16_t delay);
 void create_semaphores();
 
 // From barcodes.c
-void barcode_width_processor();
+void barcode_width_processor(void *pvParameters);
+
+// From station1.c
+void station_1_task();
+
+// Set 1 to print
+#if 1
+#define DEBUG_PRINT(fmt, args...) printf(fmt, ##args)
+#else
+#define DEBUG_PRINT(fmt, args...) // Nothing happens if DEBUG is 0
+#endif

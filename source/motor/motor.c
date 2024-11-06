@@ -42,7 +42,7 @@ const float max_speed_motor2 = 0.5;
 
 // Precompute repeated values
 const float motor_factor = max_speed_motor1 * 0.01f;
-const float pulse_to_seconds = 1 / 1e6;
+const float pulse_to_seconds = 1e-6f;
 
 // Integral and previous error terms for Motor 1
 float integral_motor1 = 0;
@@ -277,6 +277,8 @@ void process_motor_commands(void *params) {
                 case 0x00: // Stop
                     target_speed_motor1 = 0;
                     target_speed_motor2 = 0;
+                    clockwise_motor1 = true;
+                    clockwise_motor2 = true;  
                     APPLY_PID = false;
                     reset_encoder();
                     reset_PID();
@@ -424,4 +426,12 @@ void encoder_debug_task(void *params){
 void disable_warning(){
     DistanceWarning = false;
     printf("Obstacle Cleared\n");
+}
+
+// Can be called from task manager to stop all motor movements
+void reset_motor(){
+    float target_speed_motor1 = 0;
+    float target_speed_motor2 = 0;
+    bool clockwise_motor1 = true;
+    bool clockwise_motor2 = true;
 }
