@@ -12,6 +12,9 @@ uint16_t POLLING_DELAY = 250;
 SemaphoreHandle_t Ultrasonic_BinarySemaphore;
 SemaphoreHandle_t UltrasonicWarn_BinarySemaphore; //extern'd
 
+// For debug
+volatile float distance = 0;
+
 // Gets called from interrupt_dispatcher from interrupt.c
 void ultrasonic_callback(uint gpio, uint32_t events){
 
@@ -90,7 +93,7 @@ void ultrasonic_task(void *pvParameters){
     xSemaphoreTake(UltrasonicWarn_BinarySemaphore, 0);
 
     // For debug
-    float distance = 0;
+    distance = 0;
 
     vTaskDelay(pdMS_TO_TICKS(3000));
     printf("Starting Ultrasonic Task\n");

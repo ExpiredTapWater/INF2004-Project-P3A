@@ -1,7 +1,6 @@
 #include "queue.h"
 #include "semphr.h"
 
-
 #define THRESHOLD 30000
 #define MIN_THRESHOLD 100
 
@@ -20,6 +19,7 @@ extern QueueHandle_t barcodes_queue;
 
 // From wifi.c
 extern ip_addr_t remote_ip;
+extern ip_addr_t telemetry_ip;
 void send_udp_packet(const char *data, const ip_addr_t *client_ip, uint16_t client_port);
 
 // barcode.c

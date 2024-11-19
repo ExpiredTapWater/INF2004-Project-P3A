@@ -11,12 +11,12 @@
 #define HOTSPOT_REMOTE_IP_1 172
 #define HOTSPOT_REMOTE_IP_2 20
 #define HOTSPOT_REMOTE_IP_3 10
-#define HOTSPOT_REMOTE_IP_4 3
+#define HOTSPOT_REMOTE_IP_4 2
 
-#define HOTSPOT_TELE_IP_1 0
-#define HOTSPOT_TELE_IP_2 0
-#define HOTSPOT_TELE_IP_3 0
-#define HOTSPOT_TELE_IP_4 0
+#define HOTSPOT_TELE_IP_1 172
+#define HOTSPOT_TELE_IP_2 20
+#define HOTSPOT_TELE_IP_3 10
+#define HOTSPOT_TELE_IP_4 4
 
 // ---- DIRECT CONNECTION (AP) ----
 #define AP_SSID "PicoW-P3A"
@@ -27,10 +27,10 @@
 #define AP_REMOTE_IP_3 4
 #define AP_REMOTE_IP_4 2
 
-#define AP_TELE_IP_1 0
-#define AP_TELE_IP_2 0
-#define AP_TELE_IP_3 0
-#define AP_TELE_IP_4 0
+#define AP_TELE_IP_1 192
+#define AP_TELE_IP_2 168
+#define AP_TELE_IP_3 4
+#define AP_TELE_IP_4 3
 
 // Enables debug print statements
 #define DEBUG 0

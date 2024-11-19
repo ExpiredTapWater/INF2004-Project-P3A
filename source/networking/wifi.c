@@ -8,6 +8,7 @@
 #include <queue.h>
 // Networking
 #include "lwip/udp.h"
+#include "lwip/netifapi.h"
 // Our Headers
 #include "wifi.h"
 
@@ -123,13 +124,13 @@ void start_UDP_server_ap(void *pvParameters) {
             AP_REMOTE_IP_3,
             AP_REMOTE_IP_4);
 
-    /*
+    
     IP4_ADDR(&telemetry_ip,
              AP_TELE_IP_1,
              AP_TELE_IP_2,
              AP_TELE_IP_3,
              AP_TELE_IP_4);
-    */
+    
 
     // Main loop
     while (true) {
@@ -181,13 +182,13 @@ void start_UDP_server_hotspot(void *pvParameters) {
             HOTSPOT_REMOTE_IP_2,
             HOTSPOT_REMOTE_IP_3,
             HOTSPOT_REMOTE_IP_4);
-    /*
+    
     IP4_ADDR(&telemetry_ip,
              HOTSPOT_TELE_IP_1,
              HOTSPOT_TELE_IP_2,
              HOTSPOT_TELE_IP_3,
              HOTSPOT_TELE_IP_4);
-    */
+    
    
     // Main loop
     while (true) {

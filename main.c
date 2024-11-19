@@ -23,12 +23,16 @@ TaskHandle_t Command_T = NULL;
 TaskHandle_t Heartbeat_T = NULL;
 TaskHandle_t Motor_T = NULL;
 TaskHandle_t TaskManager_T = NULL;
+TaskHandle_t AutoTaskManager_T = NULL;
 TaskHandle_t LineFollowing_T = NULL;
 TaskHandle_t BarcodesPulse_T = NULL;
 TaskHandle_t Ultrasonic_T = NULL;
 TaskHandle_t Station1_T = NULL;
 TaskHandle_t TestHandle_1 = NULL;
 TaskHandle_t TestHandle_2 = NULL;
+
+// Temp
+void telemetry_task();
 
 // Determines to setup for Access Point or via Hotspot
 bool HOTSPOT = true;
@@ -110,7 +114,9 @@ int main(void)
 
     xTaskCreate(barcode_width_processor, "BarWidthTask", 2048, NULL, 3, &BarcodesPulse_T);
 
-    xTaskCreate(station_1_task, "Sta_1_Task", 1024, NULL, 1, &Station1_T);
+    xTaskCreate(auto_task_switcher, "Auto_Task", 2048, NULL, 1, &AutoTaskManager_T);
+
+    xTaskCreate(telemetry_task, "Enc_Task", 1024, NULL, 1, NULL);
 
     // Pin handles to core 0
     //vTaskCoreAffinitySet(LED_T, (1 << 0));

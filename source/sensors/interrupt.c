@@ -69,12 +69,12 @@ void setup_interrupts(){
 
 void enable_encoder_interrupts(void){
     gpio_set_irq_enabled(LEFT_ENCODER, GPIO_IRQ_EDGE_RISE, true);
-    gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, true);
+    //gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, true);
 }
 
 void disable_encoder_interrupts(void){
     gpio_set_irq_enabled(LEFT_ENCODER, GPIO_IRQ_EDGE_RISE, false);
-    gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, false);
+    //gpio_set_irq_enabled(RIGHT_ENCODER, GPIO_IRQ_EDGE_RISE, false);
 }
 
 void enable_IR_interrupts(void){

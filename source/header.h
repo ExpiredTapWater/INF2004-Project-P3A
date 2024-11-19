@@ -16,6 +16,7 @@ extern TaskHandle_t TaskManager_T;
 extern TaskHandle_t LineFollowing_T;
 extern TaskHandle_t Ultrasonic_T;
 extern TaskHandle_t BarcodesPulse_T;
+extern TaskHandle_t AutoTaskManager_T;
 extern TaskHandle_t Station1_T;
 extern TaskHandle_t TestHandle_1;
 extern TaskHandle_t TestHandle_2;
@@ -50,6 +51,7 @@ void heartbeat_task(void *pvParameters);
 void buzzer(int count);
 void task_manager(void *pvParameters);
 void line_following_task(void *pvParameters);
+void auto_task_switcher(void *pvParameters);
 
 // interrupt.c
 void setup_interrupts();

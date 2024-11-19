@@ -9,6 +9,9 @@
 #include <queue.h>
 #include "header.h"
 
+// From infrared.c
+extern volatile bool black_detected;
+
 // Flags
 bool BUZZER_INIT = false;
 bool HANDSHAKE = false; // Remote connected state
@@ -55,11 +58,18 @@ void message_handler(void *pvParameters){
         } else {
 
             // Check for special command messsages
-            if (message == 0xF1 || message == 0xF2 || message == 0xF4) {
+            if (message == 0xF1 || message == 0xF2) {
                 buzzer(1);
 
                 // Notify the mode_switcher_task of the mode change
                 xTaskNotify(TaskManager_T, message, eSetValueWithOverwrite);
+            }
+
+            // Check for special command messsages
+            if (message == 0xF4) {
+
+                // Allow line follower to take over remote at any time
+                xTaskNotifyGive(AutoTaskManager_T);
             }
             
             // Else the message should be a motor command, so send over to core_1
@@ -123,6 +133,63 @@ void buzzer(int count){
         vTaskDelay(pdMS_TO_TICKS(200));
 
     }
+}
+
+void auto_task_switcher(void *pvParameters){
+
+    while(1){
+
+        // Wait for notificaiton
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        // Wait for black
+        while(black_detected != 1){
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
+
+        // Tell remote to hold up
+        char packet[] = "+\0";  
+        send_udp_packet(packet, &remote_ip, 2004);
+
+        // Black detected, prepare to handover control to line follower
+        // Purge all pending commands
+        xQueueReset(received_queue);
+        xQueueReset(commands_queue);
+
+        DEBUG_PRINT("Reset Queues\n");
+
+        // Stop all motor movements
+        reset_motor();
+
+        vTaskDelay(pdMS_TO_TICKS(20)); // Small delay
+
+        // Task Management
+        vTaskSuspend(Command_T);
+        vTaskSuspend(Motor_T);
+        vTaskResume(BarcodesPulse_T);
+
+        DEBUG_PRINT("Tasks Set\n");
+
+        // Disable wheel encoders
+        swap_interrupts_for_station1(false);
+        disable_encoder_interrupts();
+        enable_IR_interrupts();
+
+        DEBUG_PRINT("Interrupts Set\n");
+
+        // Reset queue again in case the driver spams while the car is still moving
+        xQueueReset(received_queue);
+        xQueueReset(commands_queue);
+
+        // Reset to default 4Hz poll
+        set_ultrasonic_polldelay(250);
+
+        // Explicitly signal to line following function to proceed with true command.
+        xTaskNotify(LineFollowing_T, true, eSetValueWithOverwrite);
+        DEBUG_PRINT("Auto Line Following Enabled\n");
+
+    }
+
 }
 
 void task_manager(void *pvParameters) {
@@ -264,46 +331,7 @@ void task_manager(void *pvParameters) {
                 break;
 
             case STATION_1:
-
-                // Purge all pending commands
-                xQueueReset(received_queue);
-                xQueueReset(commands_queue);
-
-                DEBUG_PRINT("Reset Queues\n");
-
-                // Stop all motor movements
-                reset_motor();
-
-                // Task Management
-                vTaskSuspend(Command_T);
-                vTaskSuspend(BarcodesPulse_T);
-                vTaskResume(Motor_T);
-
-                DEBUG_PRINT("Tasks Set\n");
-
-                // Manage Interrupts
-                disable_IR_interrupts();
-                enable_encoder_interrupts();
-                swap_interrupts_for_station1(true);
-
-                DEBUG_PRINT("Interrupts Set\n");
-
-                vTaskDelay(pdMS_TO_TICKS(20)); // Small delay
-
-                // Reset queue again in case the driver spams while the car is still moving
-                xQueueReset(received_queue);
-                xQueueReset(commands_queue);
-
-                // Temporary set a very high delay. Station1.c will call get_distance itself.
-                set_ultrasonic_polldelay(UINT16_MAX);
-
-                // Update current selected mode
-                CURRENT_MODE = 3;
-
-                // Notify task to begin
-                xTaskNotifyGive(Station1_T);
-
-                printf("Station 1 Program Start\n");
+                break;
 
             default:
                 break;

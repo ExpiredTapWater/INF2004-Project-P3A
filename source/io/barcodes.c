@@ -161,7 +161,7 @@ void barcode_width_processor(void *pvParameters) {
     char character_reversed = '@';
 
     // Create the timer with 5 sec reset
-    xBarcodeResetTimer = xTimerCreate("BarcodeResetTimer", pdMS_TO_TICKS(5000), pdFALSE, 0, vTimerCallback);
+    xBarcodeResetTimer = xTimerCreate("BarcodeResetTimer", pdMS_TO_TICKS(3000), pdFALSE, 0, vTimerCallback);
 
     while (1) {
 
@@ -203,6 +203,7 @@ void barcode_width_processor(void *pvParameters) {
 
                     // Send failure message to remote
                     send_udp_packet("-Fail", &remote_ip, 2004);
+                    send_udp_packet("Fail", &telemetry_ip, 2004);
                     printf("Failed\n");
                 } else {
 
@@ -210,10 +211,11 @@ void barcode_width_processor(void *pvParameters) {
                     char packet[4];
                     sprintf(packet, "-%c%c", character, character_reversed);
                     send_udp_packet(packet, &remote_ip, 2004);
+                    send_udp_packet(packet, &telemetry_ip, 2004);
                     printf("Matched with %c or %c\n", character, character_reversed);
                 }
 
-                vTaskDelay(pdMS_TO_TICKS(2000));
+                vTaskDelay(pdMS_TO_TICKS(1000));
                 reset();
             }
         }

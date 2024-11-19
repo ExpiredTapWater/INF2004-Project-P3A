@@ -1,3 +1,5 @@
+#include "lwip/udp.h"
+
 // encoder.c
 #define LEFT_ENCODER 0
 #define RIGHT_ENCODER 1
@@ -26,6 +28,11 @@ void disable_warning();
 
 // barcode.c
 #define MIN_DEBOUNCE 100    // Minimum value to count as a valid interrupt. Might have to be tuned for indiviudal sensors
+
+// From wifi.c
+extern ip_addr_t remote_ip;
+extern ip_addr_t telemetry_ip;
+void send_udp_packet(const char *data, const ip_addr_t *client_ip, uint16_t client_port);
 
 // Set 1 to print
 #if 1
