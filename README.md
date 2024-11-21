@@ -1,57 +1,52 @@
 ## Multicore Branch
-The text below is outdated, just ignore
 
-
-
-The code here is meant to be run on the robotic car mounted Pico, and is optimised to make use of SMP provided by FreeRTOS.
+Explaination of each FreeRTOS task
 
 | **Task/Function**   | **Priority** | **Remarks**                                                                                          |
 |---------------------|--------------|----------------------------------------------------------------------------------------------------------|
 | `Wifi`              | High         | UDP server either via Access Point or Hotspot (Hold GP22 while booting)                                       |
-| `Heartbeat`         | Low          | Sends telemetry. Currently only sends total packets received to remote    |
-| `LED`               | Low          | Blinks the built in LED. Should always be blinking else another task is blocking    |
-| `IR`                | -            | NOT YET IMPLEMENTED |
+| `Heartbeat`         | Low          | Pico>Remote telemetry. Currently only sends total packets received to remote    |
+| `LED`               | Low          | Blinks the built in LED. Should always be blinking else another task is blocking. Also blinks when packet is received    |
+| `GPIO`              | Low          | Same as LED, but is pinned to the other core. Both should always be blinking    |
 | `Message`           | Med          | Parse received UDP packets and sends them to correct queue |
-| `Task Manager`      | Low          | Switches between remote and line following mode  |
+| `Task Manager`      | Low          | Manual switches between remote and line and other debug modes|
+| `Auto Switcher`     | Low          | Idle until notified. Switches between remote and line following automatically   |
 | `Motor`             | Equal        | Processes commands from core_0 and sets up the L298N module accordingly  |
 | `PID`               | Equal        | Updates output PWM according to PID algorithm (Will eventually merge with motor task)|
 | `LED`               | Equal        | Blinks the built in LED. Should always be blinking else another task is blocking    |
-| `Ultrasonic`        | Equal        | Uses semaphores to sync with interrupts for non blocking readings    |
+| `Ultrasonic`        | Equal        | Polling and on-demand reading. Uses semaphores to sync and override motor when obstructed    |
+| `LineTask`          | Equal        | Idle until notified, will override motor controls and follow the line    |
+| `Barcode`           | Equal        | Barcode related stuff here, always running regardless of manual or line following    |
 
-### Either (Interrupts)
-| **Task/Function**   | **Remarks**                                                                                          |
-|---------------------|------------------------------------------------------------------------------------------------------------------------|
-| `Encoder`           | Updates pulse duration based on interrupts. Not pinned to any core, but further processing is done in 'Motor' on core_1
-| `Ultrasonic`        | Interrupts used for echo pins. Logic still based in core_1
-
-### Queues
-| **Name**            | **Remarks**                                                                                          |
-|---------------------|------------------------------------------------------------------------------------------------------------------------|
-| `received_queue`    | All received UDP messgages. Does not leave core_0 |
-| `commands_queue`    | One way communication to 'Motor' on core_1 from core_0. Holds motor commands. |
 
 ### Folder Structure
     Main Folder/
-    ├── CMakeLists.txt          # Root CMakeLists.txt (No need to touch)
-    ├── main.c                  # Main driver code goes here (Call all your functions in here)
-    ├── FreeRTOS-Kernel/        # FreeRTOS kernel directory (No need to touch)
-    ├── source/                 # Source folder (Put all your codes here)
-        └── CMakeLists.txt      # Update this with whatever new .c file you added
-        └── header.h            # Generic headers used by main.c and other source files
-        └── blink.c             # Simple code to test that everything is working
-        └── io_handler.c        # Handles all IO operations
-        └── motor               # Motor related code
-            └── motor.c         # PID and motor control code
-            └── motor.h         # Headers used by motor.c
-        └── networking          # Code to support network functions
-            └── wifi.c          # Contains code to setup the UDP server
-            └── wifi.h          # Headers used by wifi.c
-            └── lwipopts.h      # Related headers (No need to touch)
-        └── sensors             # Code to support network functions
-            └── encoder.c       # For encoder functions
-            └── interrupts.c    # Not a sensor but consolidates the setup of all GPIO interrupts and callbacks
-            └── ultrasonic.c    # Code for the HC-SR04 ultrasonic sensor
-            └── sensor.h        # Headers used for most sensors
+    ├── CMakeLists.txt              # Root CMakeLists.txt
+    ├── main.c                      # Main driver code goes here
+    ├── FreeRTOS-Kernel/            # FreeRTOS kernel directory
+    ├── source/                     # Source folder
+        └── CMakeLists.txt          # Update this with whatever new .c file you added
+        └── header.h                # Generic headers used by main.c and other source files
+        └── io                      # Folder containing all IO related stuff
+            └── barcodes.c          # Barcode logic
+            └── blink.c             # For custom LED flashing patterns. Used for basic IO
+            └── io_handler.c        # Handles all IO operations, contains task manager and also buzzer stuff
+            └── line_following.c    # line following algorithms
+            └── station1.c          # No longer used station 1 code.     
+        └── motor                   # Motor related code
+            └── motor.c             # PID and motor control code
+            └── motor.h             # Headers used by motor.c
+            └── commands.h          # Maps motor commands to 1 byte commands
+        └── networking              # Code to support network functions
+            └── wifi.c              # Contains code to setup the UDP server
+            └── wifi.h              # Headers used by wifi.c
+            └── lwipopts.h          # Related headers (No need to touch)
+        └── sensors                 # Code to support network functions
+            └── encoder.c           # For encoder functions
+            └── infrared.c          # Callbacks for infrared stuff
+            └── interrupts.c        # Not a sensor but consolidates the setup of all GPIO interrupts and callbacks
+            └── ultrasonic.c        # Code for the HC-SR04 ultrasonic sensor
+            └── sensor.h            # Headers used for most sensors
 
 
 
