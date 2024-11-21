@@ -17,6 +17,7 @@ Explaination of each FreeRTOS task
 | `Ultrasonic`        | Equal        | Polling and on-demand reading. Uses semaphores to sync and override motor when obstructed    |
 | `LineTask`          | Equal        | Idle until notified, will override motor controls and follow the line    |
 | `Barcode`           | Equal        | Barcode related stuff here, always running regardless of manual or line following    |
+| `Telemetry`         | Equal        | Pico>Pico telemetry. Pulls basic info and spams the other pico    |
 
 
 ### Folder Structure
