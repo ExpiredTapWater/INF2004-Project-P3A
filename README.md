@@ -1,8 +1,6 @@
 ## Multicore Branch
 The code here is meant to be run on the robotic car mounted Pico, and is optimised to make use of SMP provided by FreeRTOS.
-Tasks are split according to producer (core_0) and consumers (core_1) with the aim of minimising cross core communication.
 
-### Core_0 (Producer)
 | **Task/Function**   | **Priority** | **Remarks**                                                                                          |
 |---------------------|--------------|----------------------------------------------------------------------------------------------------------|
 | `Wifi`              | High         | UDP server either via Access Point or Hotspot (Hold GP22 while booting)                                       |
@@ -11,10 +9,6 @@ Tasks are split according to producer (core_0) and consumers (core_1) with the a
 | `IR`                | -            | NOT YET IMPLEMENTED |
 | `Message`           | Med          | Parse received UDP packets and sends them to correct queue |
 | `Task Manager`      | Low          | Switches between remote and line following mode  |
-
-### Core_1 (Consumer)
-| **Task/Function**   | **Priority** | **Remarks**                                                                                          |
-|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
 | `Motor`             | Equal        | Processes commands from core_0 and sets up the L298N module accordingly  |
 | `PID`               | Equal        | Updates output PWM according to PID algorithm (Will eventually merge with motor task)|
 | `LED`               | Equal        | Blinks the built in LED. Should always be blinking else another task is blocking    |
