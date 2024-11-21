@@ -4,6 +4,7 @@
 ## Main Code
 - Pico (Robotic Car) - 'Multicore' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Multicore)
 - ESP32/Pico (Remote) - 'Remote' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Remote)
+- Pico only (Telemetry) - 'Telemetry' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Telemetry)
 
 ## Before Creating Your Own Branch
 Clone the test branch, and try to compile and run on your pico. It is a simple Blinky program using FreeRTOS. If its working well, then you can build your code on top of it for easier merging later.
