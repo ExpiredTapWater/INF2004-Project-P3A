@@ -1,4 +1,8 @@
 ## Multicore Branch
+The text below is outdated, just ignore
+
+
+
 The code here is meant to be run on the robotic car mounted Pico, and is optimised to make use of SMP provided by FreeRTOS.
 
 | **Task/Function**   | **Priority** | **Remarks**                                                                                          |
