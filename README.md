@@ -1,6 +1,8 @@
 # INF2004-Project-P3A
 **Robotic Car Project - Team P3A**
 
+Hi AAI friends, some of the information here is outdated. Just to clarify, we used the VS Code pico extension. It should be as simple as opening the project folder, then configure cmake and run. If you need help pls ask early as week 13 is rough. If you are here for the FreeRTOS template, we followed this guide [here](https://learnembeddedsystems.co.uk/freertos-on-rp2040-boards-pi-pico-etc-using-vscode)
+
 ## Main Code
 - Pico (Robotic Car) - 'Multicore' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Multicore)
 - ESP32/Pico (Remote) - 'Remote' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Remote)
