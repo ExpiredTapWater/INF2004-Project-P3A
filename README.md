@@ -1,26 +1,4 @@
-## Multicore Branch
-
-Explaination of each FreeRTOS task
-
-| **Task/Function**   | **Priority** | **Remarks**                                                                                          |
-|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
-| `Wifi`              | High         | UDP server either via Access Point or Hotspot (Hold GP22 while booting)                                       |
-| `Heartbeat`         | Low          | Pico>Remote telemetry. Currently only sends total packets received to remote    |
-| `LED`               | Low          | Blinks the built in LED. Should always be blinking else another task is blocking. Also blinks when packet is received    |
-| `GPIO`              | Low          | Same as LED, but is pinned to the other core. Both should always be blinking    |
-| `Message`           | Med          | Parse received UDP packets and sends them to correct queue |
-| `Task Manager`      | Low          | Manual switches between remote and line and other debug modes|
-| `Auto Switcher`     | Low          | Idle until notified. Switches between remote and line following automatically   |
-| `Motor`             | Equal        | Processes commands from core_0 and sets up the L298N module accordingly  |
-| `PID`               | Equal        | Updates output PWM according to PID algorithm (Will eventually merge with motor task)|
-| `LED`               | Equal        | Blinks the built in LED. Should always be blinking else another task is blocking    |
-| `Ultrasonic`        | Equal        | Polling and on-demand reading. Uses semaphores to sync and override motor when obstructed    |
-| `LineTask`          | Equal        | Idle until notified, will override motor controls and follow the line    |
-| `Barcode`           | Equal        | Barcode related stuff here, always running regardless of manual or line following    |
-| `Telemetry`         | Equal        | Pico>Pico telemetry. Pulls basic info and spams the other pico    |
-
 ## Rough Explaination
-
 ### **Setup**
 1. Create tasks
     - Check GP22 to decide if to host (AP mode) or connect to exsisting wifi (Hotspot)
@@ -48,6 +26,3 @@ Explaination of each FreeRTOS task
     - disable non essential interrupts
     - suspends non essential tasks
 3. Then notify line_following.c to begin.
-
-
-
