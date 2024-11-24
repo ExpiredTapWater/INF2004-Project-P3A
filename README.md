@@ -1,40 +1,84 @@
 # INF2004-Project-P3A
 **Robotic Car Project - Team P3A**
 
-Hi AAI friends, some of the information here is outdated. Just to clarify, we used the VS Code pico extension. It should be as simple as opening the project folder, then configure cmake and run. If you need help pls ask early as week 13 is rough. If you are here for the FreeRTOS template, we followed this guide [here](https://learnembeddedsystems.co.uk/freertos-on-rp2040-boards-pi-pico-etc-using-vscode)
-
 ## Main Code
 - Pico (Robotic Car) - 'Multicore' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Multicore)
 - ESP32/Pico (Remote) - 'Remote' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Remote)
 - Pico only (Telemetry) - 'Telemetry' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Telemetry)
 
-## Before Creating Your Own Branch
-Clone the test branch, and try to compile and run on your pico. It is a simple Blinky program using FreeRTOS. If its working well, then you can build your code on top of it for easier merging later.
-
-### 'Test' Branch Folder Structure
+## FreeRTOS Template Source
+We followed [This guide](https://learnembeddedsystems.co.uk/freertos-on-rp2040-boards-pi-pico-etc-using-vscode)
+   
+## Robotic Car Folder Structure
     Main Folder/
-    ├── CMakeLists.txt      # Root CMakeLists.txt (No need to touch)
-    ├── main.c              # Main driver code goes here (Call all your functions in here)
-    ├── FreeRTOS-Kernel/    # FreeRTOS kernel directory (No need to touch)
-    ├── source/             # Source folder (Put all your codes here)
-        └── CMakeLists.txt  # Update this with whatever new .c file you added
-        └── header.h        # Update this with your function prototypes before calling in main.c
-        └── blink.c         # Simple code to test that everything is working (No need to touch)
+    ├── CMakeLists.txt              # Root CMakeLists.txt
+    ├── main.c                      # Main driver code goes here
+    ├── FreeRTOS-Kernel/            # FreeRTOS kernel directory
+    ├── source/                     # Source folder
+        └── CMakeLists.txt          # Update this with whatever new .c file you added
+        └── header.h                # Generic headers used by main.c and other source files
+        └── io                      # Folder containing all IO related stuff
+            └── barcodes.c          # Barcode logic
+            └── blink.c             # For custom LED flashing patterns. Used for basic IO
+            └── io_handler.c        # Handles all IO operations, contains task manager and also buzzer stuff
+            └── line_following.c    # line following algorithms
+            └── station1.c          # No longer used station 1 code.     
+        └── motor                   # Motor related code
+            └── motor.c             # PID and motor control code
+            └── motor.h             # Headers used by motor.c
+            └── commands.h          # Maps motor commands to 1 byte commands
+        └── networking              # Code to support network functions
+            └── wifi.c              # Contains code to setup the UDP server
+            └── wifi.h              # Headers used by wifi.c
+            └── lwipopts.h          # Related headers (No need to touch)
+        └── sensors                 # Sensor related code
+            └── encoder.c           # For encoder functions
+            └── infrared.c          # Callbacks for infrared stuff
+            └── interrupts.c        # Not a sensor but consolidates the setup of all GPIO interrupts and callbacks
+            └── ultrasonic.c        # Code for the HC-SR04 ultrasonic sensor
+            └── sensor.h            # Headers used for most sensors
 
-## Help Stuff
+## Remote Folder Structure
+    Main Folder/
+    ├── CMakeLists.txt              # Root CMakeLists.txt
+    ├── main.c                      # Main driver code goes here
+    ├── FreeRTOS-Kernel/            # FreeRTOS kernel directory
+    ├── source/                     # Source folder
+        └── CMakeLists.txt          # Update this with whatever new .c file you added
+        └── header.h                # Generic headers used by main.c and other source files
+        └── io                      # Folder containing all IO related stuff
+            └── blink.c             # For custom LED flashing patterns. Used for basic IO
+            └── io_handler.c        # Handles all IO operations, handles button, interrupts and fsm
+        └── display                 # UI related stuff for use on SSD1306 display
+            └── display.c           # Draws UI element
+            └── font.h              # Generic font
+            └── ssd1306.c           # Driver for the display
+            └── ssd1306.h           # Header files for driver
+        └── networking              # Code to support network functions
+            └── wifi.c              # Contains code to connect to the car
+            └── wifi.h              # Headers used by wifi.c
+            └── lwipopts.h          # Related headers (No need to touch)
+        └── sensors                 # Sensor related code
+            └── mpu6050.c           # Driver for the accelerometer
+            └── mpu6050.h           # Header files for driver
+            └── sensor.c            # Maps sensor to commands
 
-### Where to add your functions to the header
-Add them here so you can call them from main.c
+## Telemetry Folder Structure
+    Main Folder/
+    ├── CMakeLists.txt              # Root CMakeLists.txt
+    ├── main.c                      # Main driver code goes here
+    ├── FreeRTOS-Kernel/            # FreeRTOS kernel directory
+    ├── source/                     # Source folder
+        └── CMakeLists.txt          # Update this with whatever new .c file you added
+        └── header.h                # Generic headers used by main.c and other source files
+        └── io                      # Folder containing all IO related stuff
+            └── blink.c             # For custom LED flashing patterns. Used for basic IO
+            └── io_handler.c        # Handles basic message receive and display on serial monitor
+        └── networking              # Code to support network functions
+            └── wifi.c              # Contains code to connect to the car
+            └── wifi.h              # Headers used by wifi.c
+            └── lwipopts.h          # Related headers (No need to touch)
 
-![Header](Images/header.jpg "header.h")
 
 
-### How to rename the file
-Change the variable in the red box. If you somehow need to reference it, use ${PROJECT_NAME}
 
-![Rename](Images/rename.jpg "Rename")
-
-### Where to call your functions in main.c
-Add them here so you can call them from main.c
-
-![Rename](Images/main.jpg "Main")
