@@ -33,14 +33,12 @@ Explaination of each FreeRTOS task
 4. Start heartbeat, and telemetry task. We are using UDP so we just start spamming regardless of connection
 5. Main task starts, see the table above for the tasks. All of them runs concurrently.
 
-
 ### **Non-blocking ultrasonic implementation (for the e-brake component)**
 1. Poll sensor using non blocking means
     - Distance measured is a global variable used by a few tasks
     - Use semaphores and interrupt to sync and prevent tasks from reading bad data
 2. Provide a global semaphore so any task can check for obstructions (Like a flag, but more efficient)
 3. Ensures the "alert" is only sent once, each tasks decides for itself when to clear its own flag
-
 
 ### **Auto switch to line following**
 1. Auto Switcher task waits idle using tasknotifytake with max blocking. Once command is given, it will just lookout for the black line.
@@ -50,35 +48,6 @@ Explaination of each FreeRTOS task
     - disable non essential interrupts
     - suspends non essential tasks
 3. Then notify line_following.c to begin.
-   
-### Folder Structure
-    Main Folder/
-    ├── CMakeLists.txt              # Root CMakeLists.txt
-    ├── main.c                      # Main driver code goes here
-    ├── FreeRTOS-Kernel/            # FreeRTOS kernel directory
-    ├── source/                     # Source folder
-        └── CMakeLists.txt          # Update this with whatever new .c file you added
-        └── header.h                # Generic headers used by main.c and other source files
-        └── io                      # Folder containing all IO related stuff
-            └── barcodes.c          # Barcode logic
-            └── blink.c             # For custom LED flashing patterns. Used for basic IO
-            └── io_handler.c        # Handles all IO operations, contains task manager and also buzzer stuff
-            └── line_following.c    # line following algorithms
-            └── station1.c          # No longer used station 1 code.     
-        └── motor                   # Motor related code
-            └── motor.c             # PID and motor control code
-            └── motor.h             # Headers used by motor.c
-            └── commands.h          # Maps motor commands to 1 byte commands
-        └── networking              # Code to support network functions
-            └── wifi.c              # Contains code to setup the UDP server
-            └── wifi.h              # Headers used by wifi.c
-            └── lwipopts.h          # Related headers (No need to touch)
-        └── sensors                 # Code to support network functions
-            └── encoder.c           # For encoder functions
-            └── infrared.c          # Callbacks for infrared stuff
-            └── interrupts.c        # Not a sensor but consolidates the setup of all GPIO interrupts and callbacks
-            └── ultrasonic.c        # Code for the HC-SR04 ultrasonic sensor
-            └── sensor.h            # Headers used for most sensors
 
 
 
