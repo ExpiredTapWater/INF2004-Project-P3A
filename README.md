@@ -93,7 +93,35 @@ Explaination of each FreeRTOS task
             └── mpu6050.c           # Driver for the accelerometer
             └── mpu6050.h           # Header files for driver
             └── sensor.c            # Maps sensor to commands
-# Remote Branch
+            
+## Remote Demo
+### Boot
+![Boot](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/Boot.gif "Boot")
+
+Select between two hard-coded connection options. Pressing GP21 to start sets the neutral position for the accelerometer
+
+### Main UI
+![Main](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/Main.gif "Main")
+
+- Crosshair will move according to the direction of command sent to the car, with magnitude indicating speed
+- 'o' indicates heartbeat packet received from car
+    - 'S' = Packets sent by remote
+    - 'R' = Packets received by car
+      
+### Extra
+![Others](https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/Others.gif "Others")
+
+- Disable: No commands will be send. Shown with a large 'X'.
+- Remote mode: Overrides line following and returns control to user
+- Line Follow: Marked with 'A' at top left. Allows user to continue moving the car, but takes over when line is detected
+
+<img src="https://raw.githubusercontent.com/ExpiredTapWater/INF2004-Project-P3A/refs/heads/main/Images/Telemetry.jpg" width="385px" align="center">
+
+- Each message sent by the car to telemetry is duplicated on the remote for convenience
+    - Shows messages received sequentially. Either barcodes or ultrasonic readings
+
+            
+# Telemetry Branch
 Explaination of each FreeRTOS task
 
 | **Task/Function**   | **Priority** | **Remarks**                                                                                          |
