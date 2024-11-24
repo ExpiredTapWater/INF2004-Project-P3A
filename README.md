@@ -1,15 +1,35 @@
 # INF2004-Project-P3A
 **Robotic Car Project - Team P3A**
 
-## Main Code
+### Main Code
 - Pico (Robotic Car) - 'Multicore' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Multicore)
 - ESP32/Pico (Remote) - 'Remote' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Remote)
 - Pico only (Telemetry) - 'Telemetry' branch [here](https://github.com/ExpiredTapWater/INF2004-Project-P3A/tree/Telemetry)
 
-## FreeRTOS Template Source
+### FreeRTOS Template Source
 We followed [This guide](https://learnembeddedsystems.co.uk/freertos-on-rp2040-boards-pi-pico-etc-using-vscode)
-   
-## Robotic Car Folder Structure
+
+# Multicore Branch
+Explaination of each FreeRTOS task
+
+| **Task/Function**   | **Priority** | **Remarks**                                                                                          |
+|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
+| `Wifi`              | High         | UDP server either via Access Point or Hotspot (Hold GP22 while booting)                                       |
+| `Heartbeat`         | Low          | Pico>Remote telemetry. Currently only sends total packets received to remote    |
+| `LED`               | Low          | Blinks the built in LED. Should always be blinking else another task is blocking. Also blinks when packet is received    |
+| `GPIO`              | Low          | Same as LED, but is pinned to the other core. Both should always be blinking    |
+| `Message`           | Med          | Parse received UDP packets and sends them to correct queue |
+| `Task Manager`      | Low          | Manual switches between remote and line and other debug modes|
+| `Auto Switcher`     | Low          | Idle until notified. Switches between remote and line following automatically   |
+| `Motor`             | Equal        | Processes commands from core_0 and sets up the L298N module accordingly  |
+| `PID`               | Equal        | Updates output PWM according to PID algorithm (Will eventually merge with motor task)|
+| `LED`               | Equal        | Blinks the built in LED. Should always be blinking else another task is blocking    |
+| `Ultrasonic`        | Equal        | Polling and on-demand reading. Uses semaphores to sync and override motor when obstructed    |
+| `LineTask`          | Equal        | Idle until notified, will override motor controls and follow the line    |
+| `Barcode`           | Equal        | Barcode related stuff here, always running regardless of manual or line following    |
+| `Telemetry`         | Equal        | Pico>Pico telemetry. Pulls basic info and spams the other pico    |
+
+### Folder Structure
     Main Folder/
     ├── CMakeLists.txt              # Root CMakeLists.txt
     ├── main.c                      # Main driver code goes here
@@ -37,8 +57,19 @@ We followed [This guide](https://learnembeddedsystems.co.uk/freertos-on-rp2040-b
             └── interrupts.c        # Not a sensor but consolidates the setup of all GPIO interrupts and callbacks
             └── ultrasonic.c        # Code for the HC-SR04 ultrasonic sensor
             └── sensor.h            # Headers used for most sensors
+# Remote Branch
+Explaination of each FreeRTOS task
 
-## Remote Folder Structure
+| **Task/Function**   | **Priority** | **Remarks**                                                                                          |
+|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
+| `Wifi`              | Equal        | Connect to car either via Access Point or Hotspot                                   |
+| `Display`           | Equal        | Draw UI element based on current fsm state    |
+| `Accelerometer`     | Equal        | Reads and formats values to commands    |
+| `LED`               | Equal        | Blinks LED at constant rate. If it stops then something went wrong    |
+| `Message Handler`   | Equal        | Parse received UDP packets and formats them to be displayed |
+| `Send Commands`     | Equal        | Sends byte packet of command|
+
+### Folder Structure
     Main Folder/
     ├── CMakeLists.txt              # Root CMakeLists.txt
     ├── main.c                      # Main driver code goes here
@@ -62,8 +93,16 @@ We followed [This guide](https://learnembeddedsystems.co.uk/freertos-on-rp2040-b
             └── mpu6050.c           # Driver for the accelerometer
             └── mpu6050.h           # Header files for driver
             └── sensor.c            # Maps sensor to commands
+# Remote Branch
+Explaination of each FreeRTOS task
 
-## Telemetry Folder Structure
+| **Task/Function**   | **Priority** | **Remarks**                                                                                          |
+|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
+| `Wifi`              | Equal        | Connect to car either via Access Point or Hotspot                                     |
+| `LED`               | Equal        | Blinks LED at constant rate. If it stops then something went wrong    |
+| `Message Handler`   | Equal        | Parse received UDP packets and formats them to be displayed |
+
+### Telemetry Folder Structure
     Main Folder/
     ├── CMakeLists.txt              # Root CMakeLists.txt
     ├── main.c                      # Main driver code goes here
